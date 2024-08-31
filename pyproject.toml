@@ -1,0 +1,22 @@
+[project]
+name = "subframe"
+version = "0.0.1"
+requires-python = ">=3.9"
+dependencies = [
+    "ibis-framework",
+    "ibis-substrait",
+    "pyarrow",
+    "pytest",
+    "datafusion"
+]
+
+[tool.pixi.project]
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.pixi.pypi-dependencies]
+subframe = { path = ".", editable = true }
