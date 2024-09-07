@@ -3,6 +3,8 @@ import pyarrow.compute as pc
 import pytest
 import ibis
 import subframe
+import tempfile
+import os
 from ibis_substrait.compiler.core import SubstraitCompiler
 from .consumers.consumer import SubstraitConsumer
 from .consumers.duckdb import DuckDbSubstraitConsumer
@@ -45,10 +47,6 @@ def sort_pyarrow_table(table: pa.Table):
     sort_keys = [(name, "ascending") for name in table.column_names]
     sort_indices = pc.sort_indices(table, sort_keys)
     return pc.take(table, sort_indices)
-
-
-import tempfile
-import os
 
 
 def run_query_duckdb(query, datasets):
@@ -108,6 +106,7 @@ def test_projection(consumer, request):
             "order_id",
             "description",
             table["fk_store_id"] + table["order_id"],
+            table["fk_store_id"] - table["order_id"],
             module.literal(1, type="int32").name("one"),
             two=module.literal(2, type="int32"),
         )

@@ -61,13 +61,14 @@ def translate_scalar_function(
     scalar_function: stalg.Expression.ScalarFunction, extension_functions
 ):
     func = extension_functions[scalar_function.function_reference]
-    print(func)
     arguments = [
         translate_function_argument(argument, extension_functions)
         for argument in scalar_function.arguments
     ]
     if func == "add:i64_i64":
         return " + ".join(arguments)
+    elif func == "subtract:i64_i64":
+        return " - ".join(arguments)
     else:
         raise Exception(f"Unknown function {func}")
 
