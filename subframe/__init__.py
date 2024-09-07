@@ -1,4 +1,5 @@
 from typing import Any
+from builtins import type as ptype
 
 from substrait.gen.proto import type_pb2 as stt
 from substrait.gen.proto import algebra_pb2 as stalg
@@ -25,7 +26,7 @@ def table(schema, name):
         names=column_names,
         struct=stt.Type.Struct(
             types=[substrait_type_from_string(c[1]) for c in schema],
-            nullability=stt.Type.Nullability.NULLABILITY_REQUIRED,
+            nullability=stt.Type.Nullability.NULLABILITY_NULLABLE,
         ),
     )
 
@@ -42,14 +43,13 @@ def table(schema, name):
     return Table(plan=plan)
 
 
-from builtins import type as ptype
-
-
 def literal(value: Any, type: str = None) -> Value:
     # TODO assumes i32
 
     if ptype(value) == int:
-        expr = stalg.Expression(literal=stalg.Expression.Literal(i32=value))
+        expr = stalg.Expression(
+            literal=stalg.Expression.Literal(i32=value, nullable=True)
+        )
     else:
         raise Exception("Unknown literal")
 

@@ -1,9 +1,13 @@
 import pyarrow as pa
 import pyarrow.compute as pc
+import pytest
 import ibis
 import subframe
 from ibis_substrait.compiler.core import SubstraitCompiler
-from .consumer_utils import DatafusionSubstraitConsumer
+from .consumers.consumer import SubstraitConsumer
+from .consumers.duckdb import DuckDbSubstraitConsumer
+from .consumers.acero import AceroSubstraitConsumer
+from .consumers.datafusion import DatafusionSubstraitConsumer
 
 
 orders_raw = [
@@ -34,7 +38,7 @@ customers = ibis.table([(x[0], x[1]) for x in customers_raw], name="customers")
 
 orders_sf = subframe.table([(x[0], x[1]) for x in orders_raw], name="orders")
 
-consumer = DatafusionSubstraitConsumer().with_tables(datasets)
+consumer = DuckDbSubstraitConsumer().with_tables(datasets)
 
 
 def sort_pyarrow_table(table: pa.Table):
@@ -43,7 +47,64 @@ def sort_pyarrow_table(table: pa.Table):
     return pc.take(table, sort_indices)
 
 
-def test_bla():
+import tempfile
+import os
+
+
+def run_query_duckdb(query, datasets):
+    with tempfile.TemporaryDirectory() as tempdir:
+        con = ibis.duckdb.connect(os.path.join(tempdir, "temp.db"))
+        for table_name, pa_table in datasets.items():
+            con.create_table(name=table_name, obj=ibis.memtable(pa_table))
+
+        # TODO con.to_pyarrow(query) in duckdb backend doesn't work with latest ibis and pyarrow versions
+        res = pa.Table.from_pandas(con.to_pandas(query))
+        con.disconnect()
+        return res
+
+
+def run_parity_test(
+    consumer: SubstraitConsumer, expr: ibis.Table, expr_sf: subframe.Table
+):
+    res_duckdb = sort_pyarrow_table(run_query_duckdb(expr, datasets))
+
+    plan_ibis = SubstraitCompiler().compile(expr)
+    plan_sf = expr_sf.to_plan()
+
+    print(plan_sf)
+
+    res_sf = sort_pyarrow_table(consumer.execute(plan_sf))
+    res_ibis = sort_pyarrow_table(consumer.execute(plan_ibis))
+
+    # print(res_duckdb)
+    # print("---------------")
+    # print(res_sf)
+    # print("---------------")
+    # print(res_ibis)
+
+    assert res_sf.to_pandas().equals(res_duckdb.to_pandas())
+    assert res_ibis.to_pandas().equals(res_duckdb.to_pandas())
+
+
+@pytest.fixture
+def acero_consumer():
+    return AceroSubstraitConsumer().with_tables(datasets)
+
+
+@pytest.fixture
+def datafusion_consumer():
+    return DatafusionSubstraitConsumer().with_tables(datasets)
+
+
+@pytest.fixture
+def duckdb_consumer():
+    return DuckDbSubstraitConsumer().with_tables(datasets)
+
+
+@pytest.mark.parametrize(
+    "consumer", ["acero_consumer", "datafusion_consumer", "duckdb_consumer"]
+)
+def test_projection(consumer, request):
 
     def transform(table, module):
         return table.select(
@@ -54,14 +115,7 @@ def test_bla():
             two=module.literal(2, type="int32"),
         )
 
-    plan_ibis = SubstraitCompiler().compile(transform(orders, ibis))
-    plan_sf = transform(orders_sf, subframe).to_plan()
-    print(plan_sf)
+    ibis_expr = transform(orders, ibis)
+    sf_expr = transform(orders_sf, subframe)
 
-    res_sf = sort_pyarrow_table(consumer.execute(plan_sf))
-    res_ibis = sort_pyarrow_table(consumer.execute(plan_ibis))
-
-    print(res_ibis)
-    print(res_sf)
-
-    assert res_ibis.equals(res_sf)
+    run_parity_test(request.getfixturevalue(consumer), ibis_expr, sf_expr)
