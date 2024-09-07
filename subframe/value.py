@@ -24,27 +24,40 @@ class Value:
         )
 
     def __add__(self, other: "Value"):
-        # TODO unique placeholder for function_reference???
+        from subframe import registry
+
+        res = registry.lookup_scalar_function(
+            "https://github.com/substrait-io/substrait/blob/main/extensions/functions_arithmetic.yaml",
+            "add",
+        ).lookup_signature(
+            [self.data_type.WhichOneof("kind"), other.data_type.WhichOneof("kind")]
+        )
+
+        return_type = res[2]["return"]
+
+        if return_type == "i64":
+            output_type = stt.Type(
+                i64=stt.Type.I64(nullability=stt.Type.NULLABILITY_NULLABLE)
+            )
+        else:
+            raise Exception(f"Unknown return type {return_type}")
+
         return Value(
             expression=stalg.Expression(
                 scalar_function=stalg.Expression.ScalarFunction(
-                    function_reference=1,
-                    output_type=stt.Type(
-                        i64=stt.Type.I64(nullability=stt.Type.NULLABILITY_NULLABLE)
-                    ),
+                    function_reference=res[0],
+                    output_type=output_type,
                     arguments=[
                         stalg.FunctionArgument(value=self.expression),
                         stalg.FunctionArgument(value=other.expression),
                     ],
                 )
             ),
-            data_type=stt.Type(
-                i64=stt.Type.I64(nullability=stt.Type.NULLABILITY_NULLABLE)
-            ),
+            data_type=output_type,
             name=f"Add({self._name}, {other._name})",
             extensions={
                 "https://github.com/substrait-io/substrait/blob/main/extensions/functions_arithmetic.yaml": {
-                    "add:i64_i64": 1  # TODO type inference
+                    res[1]: res[0]
                 }
             },
         )

@@ -5,6 +5,26 @@ from substrait.gen.proto import type_pb2 as stt
 from substrait.gen.proto import algebra_pb2 as stalg
 from .table import Table
 from .value import Value
+from .extensions.extension_registry import ExtensionRegistry
+
+registry = ExtensionRegistry(
+    [
+        "https://github.com/substrait-io/substrait/blob/main/extensions/functions_aggregate_approx.yaml",
+        "https://github.com/substrait-io/substrait/blob/main/extensions/functions_aggregate_decimal_output.yaml",
+        "https://github.com/substrait-io/substrait/blob/main/extensions/functions_aggregate_generic.yaml",
+        "https://github.com/substrait-io/substrait/blob/main/extensions/functions_arithmetic.yaml",
+        "https://github.com/substrait-io/substrait/blob/main/extensions/functions_arithmetic_decimal.yaml",
+        "https://github.com/substrait-io/substrait/blob/main/extensions/functions_boolean.yaml",
+        "https://github.com/substrait-io/substrait/blob/main/extensions/functions_comparison.yaml",
+        "https://github.com/substrait-io/substrait/blob/main/extensions/functions_datetime.yaml",
+        "https://github.com/substrait-io/substrait/blob/main/extensions/functions_geometry.yaml",
+        "https://github.com/substrait-io/substrait/blob/main/extensions/functions_logarithmic.yaml",
+        "https://github.com/substrait-io/substrait/blob/main/extensions/functions_rounding.yaml",
+        "https://github.com/substrait-io/substrait/blob/main/extensions/functions_set.yaml",
+        "https://github.com/substrait-io/substrait/blob/main/extensions/functions_string.yaml",
+        "https://github.com/substrait-io/substrait/blob/main/extensions/type_variations.yaml",
+    ]
+)
 
 
 def substrait_type_from_string(type: str):
