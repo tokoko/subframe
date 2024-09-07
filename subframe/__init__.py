@@ -22,12 +22,13 @@ def substrait_type_from_string(type: str):
 
 def table(schema, name):
     column_names = [c[0] for c in schema]
+    struct = stt.Type.Struct(
+        types=[substrait_type_from_string(c[1]) for c in schema],
+        nullability=stt.Type.Nullability.NULLABILITY_NULLABLE,
+    )
     schema = stt.NamedStruct(
         names=column_names,
-        struct=stt.Type.Struct(
-            types=[substrait_type_from_string(c[1]) for c in schema],
-            nullability=stt.Type.Nullability.NULLABILITY_NULLABLE,
-        ),
+        struct=struct,
     )
 
     rel = stalg.Rel(
@@ -40,7 +41,7 @@ def table(schema, name):
 
     plan: stalg.RelRoot = stalg.RelRoot(input=rel, names=column_names)
 
-    return Table(plan=plan)
+    return Table(plan=plan, struct=struct)
 
 
 def literal(value: Any, type: str = None) -> Value:
@@ -50,7 +51,11 @@ def literal(value: Any, type: str = None) -> Value:
         expr = stalg.Expression(
             literal=stalg.Expression.Literal(i32=value, nullable=True)
         )
+        return Value(
+            expression=expr,
+            data_type=stt.Type(
+                i32=stt.Type.I32(nullability=stt.Type.NULLABILITY_NULLABLE)
+            ),
+        )
     else:
         raise Exception("Unknown literal")
-
-    return Value(expression=expr)

@@ -1,14 +1,18 @@
 import itertools
 from substrait.gen.proto import algebra_pb2 as stalg
 from substrait.gen.proto import plan_pb2 as stp
+from substrait.gen.proto import type_pb2 as stt
 from substrait.gen.proto.extensions import extensions_pb2 as ste
 from .value import Value
 
 
 class Table:
-    def __init__(self, plan: stalg.RelRoot, extensions={}) -> None:
+    def __init__(
+        self, plan: stalg.RelRoot, struct: stt.Type.Struct, extensions={}
+    ) -> None:
         self.plan = plan
         self.extensions = extensions
+        self.struct = struct
 
     def __getitem__(self, what: str):
         expression = stalg.Expression(
@@ -21,7 +25,11 @@ class Table:
                 ),
             )
         )
-        return Value(expression, what)
+        return Value(
+            expression,
+            data_type=self.struct.types[list(self.plan.names).index(what)],
+            name=what,
+        )
 
     def to_plan(self) -> stp.Plan:
         return stp.Plan(
@@ -96,4 +104,22 @@ class Table:
 
         names = [c[0] for c in combined_exprs]
 
-        return Table(plan=stalg.RelRoot(input=rel, names=names), extensions=extensions)
+        schema = [
+            (
+                self.struct.types[list(self.plan.names).index(c[1])]
+                if type(c[1]) == str
+                else c[1].data_type
+            )
+            for c in combined_exprs
+        ]
+
+        struct = stt.Type.Struct(
+            types=schema,
+            nullability=stt.Type.Nullability.NULLABILITY_NULLABLE,
+        )
+
+        return Table(
+            plan=stalg.RelRoot(input=rel, names=names),
+            struct=struct,
+            extensions=extensions,
+        )

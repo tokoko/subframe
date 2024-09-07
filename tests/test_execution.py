@@ -70,17 +70,14 @@ def run_parity_test(
 
     plan_ibis = SubstraitCompiler().compile(expr)
     plan_sf = expr_sf.to_plan()
-
-    print(plan_sf)
-
     res_sf = sort_pyarrow_table(consumer.execute(plan_sf))
     res_ibis = sort_pyarrow_table(consumer.execute(plan_ibis))
 
-    # print(res_duckdb)
-    # print("---------------")
-    # print(res_sf)
-    # print("---------------")
-    # print(res_ibis)
+    print(res_duckdb)
+    print("---------------")
+    print(res_sf)
+    print("---------------")
+    print(res_ibis)
 
     assert res_sf.to_pandas().equals(res_duckdb.to_pandas())
     assert res_ibis.to_pandas().equals(res_duckdb.to_pandas())
