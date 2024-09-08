@@ -91,11 +91,8 @@ class Column(Value):
         )
         self.table = table
 
-    def max(self):
+    def _apply_aggregate_function(self, url: str, func: str, col_name: str):
         from subframe import registry
-
-        url = "https://github.com/substrait-io/substrait/blob/main/extensions/functions_arithmetic.yaml"
-        func = "max"
 
         res = registry.lookup_aggregate_function(url, func).lookup_signature(
             [self.data_type.WhichOneof("kind")]
@@ -105,7 +102,7 @@ class Column(Value):
 
         aggregate_function = stalg.AggregateFunction(
             function_reference=res[0],
-            phase=stalg.AggregationPhase.AGGREGATION_PHASE_INITIAL_TO_RESULT,
+            phase=stalg.AggregationPhase.AGGREGATION_PHASE_INITIAL_TO_RESULT,  # TODO
             arguments=[stalg.FunctionArgument(value=self.expression)],
             output_type=output_type,
         )
@@ -114,7 +111,23 @@ class Column(Value):
             aggregate_function=aggregate_function,
             data_type=output_type,
             extensions={url: {res[1]: res[0]}},
-            name=f"Max({self._name})",
+            name=f"{col_name}({self._name})",
+        )
+
+    def max(self):
+
+        return self._apply_aggregate_function(
+            url="https://github.com/substrait-io/substrait/blob/main/extensions/functions_arithmetic.yaml",
+            func="max",
+            col_name="Max",
+        )
+
+    def min(self):
+
+        return self._apply_aggregate_function(
+            url="https://github.com/substrait-io/substrait/blob/main/extensions/functions_arithmetic.yaml",
+            func="min",
+            col_name="Min",
         )
 
 

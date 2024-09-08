@@ -67,13 +67,7 @@ class Table:
 
         return extensions
 
-    def select(
-        self,
-        *exprs: Value | str,  # TODO | Iterable[Value | str],
-        **named_exprs: Value | str,
-    ):
-        mapping_counter = itertools.count(len(self.plan.names))
-
+    def _to_values(self, exprs: list[Value | str], named_exprs: dict[str, Value | str]):
         combined_exprs = [(e if type(e) == str else e._name, e) for e in exprs] + list(
             named_exprs.items()
         )
@@ -83,7 +77,18 @@ class Table:
             for c in combined_exprs
         ]
 
+        return combined_exprs
+
+    def select(
+        self,
+        *exprs: Value | str,  # TODO | Iterable[Value | str],
+        **named_exprs: Value | str,
+    ):
+        combined_exprs = self._to_values(exprs, named_exprs)
+
         extensions = self._merged_extensions(combined_exprs)
+
+        mapping_counter = itertools.count(len(self.plan.names))
 
         rel = stalg.Rel(
             project=stalg.ProjectRel(
@@ -132,7 +137,7 @@ class Table:
     #     *by: str | ir.Value | Iterable[str] | Iterable[ir.Value] | None,
     #     **key_exprs: str | ir.Value | Iterable[str] | Iterable[ir.Value],
     # ) -> GroupedTable:
-    def group_by(self, *by: str):
+    def group_by(self, *by: Value | str, **key_exprs: Value | str):
         from .grouped_table import GroupedTable
 
-        return GroupedTable(self, by)
+        return GroupedTable(self, by, key_exprs)
