@@ -77,5 +77,16 @@ def literal(value: Any, type: str = None) -> Value:
                 i32=stt.Type.I32(nullability=stt.Type.NULLABILITY_NULLABLE)
             ),
         )
+    elif ptype(value) == bool:
+        expr = stalg.Expression(
+            literal=stalg.Expression.Literal(boolean=value, nullable=True)
+        )
+        return Value(
+            expression=expr,
+            data_type=stt.Type(
+                bool=stt.Type.Boolean(nullability=stt.Type.NULLABILITY_NULLABLE)
+            ),
+            name="True" if value else "False",
+        )
     else:
         raise Exception("Unknown literal")

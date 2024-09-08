@@ -1,4 +1,4 @@
-class ExtensionScalarFunction:
+class ExtensionFunction:
     def __init__(self, function_definition: dict, anchor: int):
         self.function_definition = function_definition
         self.anchor = anchor

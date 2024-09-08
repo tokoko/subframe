@@ -71,11 +71,11 @@ def run_parity_test(
     res_sf = sort_pyarrow_table(consumer.execute(plan_sf))
     res_ibis = sort_pyarrow_table(consumer.execute(plan_ibis))
 
-    print(res_duckdb)
+    print(res_duckdb.to_pandas())
     print("---------------")
-    print(res_sf)
+    print(res_sf.to_pandas())
     print("---------------")
-    print(res_ibis)
+    print(res_ibis.to_pandas())
 
     assert res_sf.to_pandas().equals(res_duckdb.to_pandas())
     assert res_ibis.to_pandas().equals(res_duckdb.to_pandas())
@@ -115,3 +115,61 @@ def test_projection(consumer, request):
     sf_expr = transform(orders_sf, subframe)
 
     run_parity_test(request.getfixturevalue(consumer), ibis_expr, sf_expr)
+
+
+@pytest.mark.parametrize(
+    "consumer", ["acero_consumer", "datafusion_consumer"]  # , "duckdb_consumer"]
+)
+def test_projection_literals(consumer, request):
+
+    def transform(table, module):
+        return table.select(
+            module.literal(1, type="int32").name("one"), module.literal(True)
+        )
+
+    ibis_expr = transform(orders, ibis)
+    sf_expr = transform(orders_sf, subframe)
+
+    run_parity_test(request.getfixturevalue(consumer), ibis_expr, sf_expr)
+
+
+@pytest.mark.parametrize(
+    "consumer", ["acero_consumer", "datafusion_consumer"]  # , "duckdb_consumer"]
+)
+def test_filter(consumer, request):
+
+    def transform(table, module):
+        return table.filter(module.literal(True))
+
+    ibis_expr = transform(orders, ibis)
+    sf_expr = transform(orders_sf, subframe)
+
+    run_parity_test(request.getfixturevalue(consumer), ibis_expr, sf_expr)
+
+
+@pytest.mark.parametrize(
+    "consumer", ["acero_consumer"]  # , "datafusion_consumer"]  # , "duckdb_consumer"]
+)
+def test_aggregate(consumer, request):
+
+    def transform(table, module):
+        return table.group_by("fk_store_id").agg(table["order_total"].max())
+
+    ibis_expr = transform(orders, ibis)
+    sf_expr = transform(orders_sf, subframe)
+
+    run_parity_test(request.getfixturevalue(consumer), ibis_expr, sf_expr)
+
+
+# @pytest.mark.parametrize(
+#     "consumer", ["acero_consumer", "datafusion_consumer", "duckdb_consumer"]
+# )
+# def test_scalar_subquery(consumer, request):
+
+#     def transform(table, module):
+#         return table.select(table["order_total"], table["order_total"].max())
+
+#     ibis_expr = transform(orders, ibis)
+#     sf_expr = transform(orders_sf, subframe)
+
+#     run_parity_test(request.getfixturevalue(consumer), ibis_expr, sf_expr)

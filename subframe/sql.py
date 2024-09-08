@@ -42,6 +42,8 @@ def translate_literal(literal: stalg.Expression.Literal, extension_functions):
 
     if literal_type == "i32":
         return literal.i32
+    # elif literal_type == "boolean":
+    #     return
     else:
         raise Exception(f"Unknown literal_type {literal_type}")
 
