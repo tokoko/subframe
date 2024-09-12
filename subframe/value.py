@@ -38,6 +38,11 @@ class Value:
     def _apply_function(self, other: "Value", url: str, func: str, col_name: str):
         from subframe import registry
 
+        if not url.startswith("http"):
+            url = (
+                f"https://github.com/substrait-io/substrait/blob/main/extensions/{url}"
+            )
+
         res = registry.lookup_scalar_function(url, func).lookup_signature(
             [self.data_type.WhichOneof("kind"), other.data_type.WhichOneof("kind")]
         )
@@ -63,7 +68,7 @@ class Value:
     def __add__(self, other: "Value"):
         return self._apply_function(
             other=other,
-            url="https://github.com/substrait-io/substrait/blob/main/extensions/functions_arithmetic.yaml",
+            url="functions_arithmetic.yaml",
             func="add",
             col_name="Add",
         )
@@ -71,7 +76,7 @@ class Value:
     def __sub__(self, other: "Value"):
         return self._apply_function(
             other=other,
-            url="https://github.com/substrait-io/substrait/blob/main/extensions/functions_arithmetic.yaml",
+            url="functions_arithmetic.yaml",
             func="subtract",
             col_name="Subtract",
         )
@@ -93,6 +98,11 @@ class Column(Value):
 
     def _apply_aggregate_function(self, url: str, func: str, col_name: str):
         from subframe import registry
+
+        if not url.startswith("http"):
+            url = (
+                f"https://github.com/substrait-io/substrait/blob/main/extensions/{url}"
+            )
 
         res = registry.lookup_aggregate_function(url, func).lookup_signature(
             [self.data_type.WhichOneof("kind")]
@@ -117,7 +127,7 @@ class Column(Value):
     def max(self):
 
         return self._apply_aggregate_function(
-            url="https://github.com/substrait-io/substrait/blob/main/extensions/functions_arithmetic.yaml",
+            url="functions_arithmetic.yaml",
             func="max",
             col_name="Max",
         )
@@ -125,7 +135,7 @@ class Column(Value):
     def min(self):
 
         return self._apply_aggregate_function(
-            url="https://github.com/substrait-io/substrait/blob/main/extensions/functions_arithmetic.yaml",
+            url="functions_arithmetic.yaml",
             func="min",
             col_name="Min",
         )
