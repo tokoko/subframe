@@ -150,14 +150,33 @@ def test_filter(consumer, request):
 @pytest.mark.parametrize(
     "consumer", ["acero_consumer", "datafusion_consumer"]  # , "duckdb_consumer"]
 )
-def test_aggregate(consumer, request):
+def test_aggregate_group_by(consumer, request):
 
     def transform(table, module):
         return (
-            table.group_by("fk_store_id")
+            table.group_by(fk_store_id="fk_store_id")
             .agg(table["order_total"].max(), table["order_total"].min())
             .filter(module.literal(True))  # TODO datafusion workaround, remove later
         )
+
+    ibis_expr = transform(orders, ibis)
+    sf_expr = transform(orders_sf, subframe)
+
+    run_parity_test(request.getfixturevalue(consumer), ibis_expr, sf_expr)
+
+
+@pytest.mark.parametrize(
+    "consumer", ["acero_consumer", "datafusion_consumer"]  # , "duckdb_consumer"]
+)
+def test_aggregate(consumer, request):
+
+    def transform(table, module):
+        return table.aggregate(
+            by=["fk_store_id"],
+            metrics=[table["order_total"].max(), table["order_total"].min()],
+        ).filter(
+            module.literal(True)
+        )  # TODO datafusion workaround, remove later
 
     ibis_expr = transform(orders, ibis)
     sf_expr = transform(orders_sf, subframe)

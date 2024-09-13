@@ -15,37 +15,6 @@ class GroupedTable:
         self.key_exprs = key_exprs
 
     def agg(self, *exprs: AggregateValue):
-
         combined_exprs = self.table._to_values(self.by, self.key_exprs)
 
-        rel = stalg.Rel(
-            aggregate=stalg.AggregateRel(
-                input=self.table.plan.input,
-                groupings=[
-                    stalg.AggregateRel.Grouping(
-                        grouping_expressions=[val.expression for val in combined_exprs]
-                    )
-                ],
-                measures=[
-                    stalg.AggregateRel.Measure(measure=expr.aggregate_function)
-                    for expr in exprs
-                ],
-            )
-        )
-
-        names = [c._name for c in combined_exprs] + [expr.name for expr in exprs]
-
-        schema = [c.data_type for c in combined_exprs] + [
-            expr.data_type for expr in exprs
-        ]
-
-        struct = stt.Type.Struct(
-            types=schema,
-            nullability=stt.Type.Nullability.NULLABILITY_NULLABLE,
-        )
-
-        return Table(
-            plan=stalg.RelRoot(input=rel, names=names),
-            struct=struct,
-            extensions=self.table._merged_extensions([expr for expr in exprs]),
-        )
+        return self.table.aggregate(metrics=exprs, by=combined_exprs)

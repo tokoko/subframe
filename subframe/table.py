@@ -3,7 +3,7 @@ from substrait.gen.proto import algebra_pb2 as stalg
 from substrait.gen.proto import plan_pb2 as stp
 from substrait.gen.proto import type_pb2 as stt
 from substrait.gen.proto.extensions import extensions_pb2 as ste
-from .value import Value, Column
+from .value import Value, Column, AggregateValue
 
 
 class Table:
@@ -141,3 +141,45 @@ class Table:
         from .grouped_table import GroupedTable
 
         return GroupedTable(self, by, key_exprs)
+
+    # def aggregate(
+    #     self,
+    #     metrics: Sequence[ir.Scalar] | None = (),
+    #     by: Sequence[ir.Value] | None = (),
+    #     having: Sequence[ir.BooleanValue] | None = (),
+    #     **kwargs: ir.Value,
+    # ) -> Table:
+    def aggregate(self, metrics: list[AggregateValue], by: list[Value | str]):
+        combined_exprs = self._to_values(by, {})
+
+        rel = stalg.Rel(
+            aggregate=stalg.AggregateRel(
+                input=self.plan.input,
+                groupings=[
+                    stalg.AggregateRel.Grouping(
+                        grouping_expressions=[val.expression for val in combined_exprs]
+                    )
+                ],
+                measures=[
+                    stalg.AggregateRel.Measure(measure=expr.aggregate_function)
+                    for expr in metrics
+                ],
+            )
+        )
+
+        names = [c._name for c in combined_exprs] + [expr.name for expr in metrics]
+
+        schema = [c.data_type for c in combined_exprs] + [
+            expr.data_type for expr in metrics
+        ]
+
+        struct = stt.Type.Struct(
+            types=schema,
+            nullability=stt.Type.Nullability.NULLABILITY_NULLABLE,
+        )
+
+        return Table(
+            plan=stalg.RelRoot(input=rel, names=names),
+            struct=struct,
+            extensions=self._merged_extensions([expr for expr in metrics]),
+        )
