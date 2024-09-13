@@ -183,3 +183,17 @@ class Table:
             struct=struct,
             extensions=self._merged_extensions([expr for expr in metrics]),
         )
+
+    def as_scalar(self):
+        expression = stalg.Expression(
+            subquery=stalg.Expression.Subquery(
+                scalar=stalg.Expression.Subquery.Scalar(input=self.plan.input)
+            )
+        )
+
+        return Value(
+            expression,
+            data_type=self.struct.types[0],
+            name="ScalarSubquery()",  # TODO why??
+            ## TODO extensions
+        )

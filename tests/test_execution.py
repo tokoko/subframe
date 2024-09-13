@@ -33,14 +33,22 @@ datasets = {
     "customers": pa.Table.from_pydict({x[0]: x[2] for x in customers_raw}),
 }
 
-orders = ibis.table([(x[0], x[1]) for x in orders_raw], name="orders")
-stores = ibis.table([(x[0], x[1]) for x in stores_raw], name="stores")
-customers = ibis.table([(x[0], x[1]) for x in customers_raw], name="customers")
+# orders = ibis.table([(x[0], x[1]) for x in orders_raw], name="orders")
+# stores = ibis.table([(x[0], x[1]) for x in stores_raw], name="stores")
+# customers = ibis.table([(x[0], x[1]) for x in customers_raw], name="customers")
 
 
-orders_sf = subframe.table([(x[0], x[1]) for x in orders_raw], name="orders")
+# orders_sf = subframe.table([(x[0], x[1]) for x in orders_raw], name="orders")
 
 consumer = DuckDbSubstraitConsumer().with_tables(datasets)
+
+
+def _orders(module):
+    return module.table([(x[0], x[1]) for x in orders_raw], name="orders")
+
+
+def _stores(module):
+    return module.table([(x[0], x[1]) for x in stores_raw], name="stores")
 
 
 def sort_pyarrow_table(table: pa.Table):
@@ -101,7 +109,8 @@ def duckdb_consumer():
 )
 def test_projection(consumer, request):
 
-    def transform(table, module):
+    def transform(module):
+        table = _orders(module)
         return table.select(
             "order_id",
             "description",
@@ -111,8 +120,8 @@ def test_projection(consumer, request):
             two=module.literal(2, type="int32"),
         )
 
-    ibis_expr = transform(orders, ibis)
-    sf_expr = transform(orders_sf, subframe)
+    ibis_expr = transform(ibis)
+    sf_expr = transform(subframe)
 
     run_parity_test(request.getfixturevalue(consumer), ibis_expr, sf_expr)
 
@@ -122,13 +131,14 @@ def test_projection(consumer, request):
 )
 def test_projection_literals(consumer, request):
 
-    def transform(table, module):
+    def transform(module):
+        table = _orders(module)
         return table.select(
             module.literal(1, type="int32").name("one"), module.literal(True)
         )
 
-    ibis_expr = transform(orders, ibis)
-    sf_expr = transform(orders_sf, subframe)
+    ibis_expr = transform(ibis)
+    sf_expr = transform(subframe)
 
     run_parity_test(request.getfixturevalue(consumer), ibis_expr, sf_expr)
 
@@ -138,11 +148,12 @@ def test_projection_literals(consumer, request):
 )
 def test_filter(consumer, request):
 
-    def transform(table, module):
+    def transform(module):
+        table = _orders(module)
         return table.filter(module.literal(True))
 
-    ibis_expr = transform(orders, ibis)
-    sf_expr = transform(orders_sf, subframe)
+    ibis_expr = transform(ibis)
+    sf_expr = transform(subframe)
 
     run_parity_test(request.getfixturevalue(consumer), ibis_expr, sf_expr)
 
@@ -152,15 +163,16 @@ def test_filter(consumer, request):
 )
 def test_aggregate_group_by(consumer, request):
 
-    def transform(table, module):
+    def transform(module):
+        table = _orders(module)
         return (
             table.group_by(fk_store_id="fk_store_id")
             .agg(table["order_total"].max(), table["order_total"].min())
             .filter(module.literal(True))  # TODO datafusion workaround, remove later
         )
 
-    ibis_expr = transform(orders, ibis)
-    sf_expr = transform(orders_sf, subframe)
+    ibis_expr = transform(ibis)
+    sf_expr = transform(subframe)
 
     run_parity_test(request.getfixturevalue(consumer), ibis_expr, sf_expr)
 
@@ -170,7 +182,8 @@ def test_aggregate_group_by(consumer, request):
 )
 def test_aggregate(consumer, request):
 
-    def transform(table, module):
+    def transform(module):
+        table = _orders(module)
         return table.aggregate(
             by=["fk_store_id"],
             metrics=[table["order_total"].max(), table["order_total"].min()],
@@ -178,21 +191,30 @@ def test_aggregate(consumer, request):
             module.literal(True)
         )  # TODO datafusion workaround, remove later
 
-    ibis_expr = transform(orders, ibis)
-    sf_expr = transform(orders_sf, subframe)
+    ibis_expr = transform(ibis)
+    sf_expr = transform(subframe)
 
     run_parity_test(request.getfixturevalue(consumer), ibis_expr, sf_expr)
 
 
-# @pytest.mark.parametrize(
-#     "consumer", ["acero_consumer", "datafusion_consumer", "duckdb_consumer"]
-# )
-# def test_scalar_subquery(consumer, request):
+@pytest.mark.parametrize(
+    "consumer",
+    [
+        "datafusion_consumer"
+    ],  # "acero_consumer", "datafusion_consumer", "duckdb_consumer"]
+)
+def test_scalar_subquery(consumer, request):
 
-#     def transform(table, module):
-#         return table.select(table["order_total"], table["order_total"].max())
+    def transform(module):
+        orders = _orders(module)
+        stores = _stores(module)
 
-#     ibis_expr = transform(orders, ibis)
-#     sf_expr = transform(orders_sf, subframe)
+        return orders.select(
+            orders["fk_store_id"],
+            stores.aggregate(by=[], metrics=[stores["store_id"].max()]).as_scalar(),
+        )
 
-#     run_parity_test(request.getfixturevalue(consumer), ibis_expr, sf_expr)
+    ibis_expr = transform(ibis)
+    sf_expr = transform(subframe)
+
+    run_parity_test(request.getfixturevalue(consumer), ibis_expr, sf_expr)
