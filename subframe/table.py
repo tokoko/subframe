@@ -117,6 +117,7 @@ class Table:
 
     # TODO *predicates: ir.BooleanValue | Sequence[ir.BooleanValue] | IfAnyAll,
     def filter(self, *predicates: Value):
+        assert len(predicates) == 1
         predicate = predicates[0]  # TODO ignores all predicates except the first one
         rel = stalg.Rel(
             filter=stalg.FilterRel(
@@ -127,7 +128,7 @@ class Table:
         return Table(
             plan=stalg.RelRoot(input=rel, names=self.plan.names),
             struct=self.struct,
-            extensions=self.extensions,  # TODO copy??
+            extensions=self._merged_extensions(predicates),
         )
 
     # def group_by(

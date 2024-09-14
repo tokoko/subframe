@@ -8,7 +8,7 @@ class ExtensionFunction:
             impl_args = impl.get("args", [])
             if len(impl_args) == len(args) and all(
                 [
-                    x == y or y == "any"
+                    x == y or y.startswith("any")  # TODO
                     for x, y in zip(args, [x["value"] for x in impl_args])
                 ]
             ):

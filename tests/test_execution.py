@@ -129,6 +129,28 @@ def test_projection(consumer, request):
 @pytest.mark.parametrize(
     "consumer", ["acero_consumer", "datafusion_consumer"]  # , "duckdb_consumer"]
 )
+def test_projection_comparisions(consumer, request):
+
+    def transform(module):
+        table = _orders(module)
+        return table.select(
+            table["order_id"] == table["fk_store_id"],
+            table["order_id"] != table["fk_store_id"],
+            table["order_id"] > table["fk_store_id"],
+            table["order_id"] >= table["fk_store_id"],
+            table["order_id"] < table["fk_store_id"],
+            table["order_id"] <= table["fk_store_id"],
+        )
+
+    ibis_expr = transform(ibis)
+    sf_expr = transform(subframe)
+
+    run_parity_test(request.getfixturevalue(consumer), ibis_expr, sf_expr)
+
+
+@pytest.mark.parametrize(
+    "consumer", ["acero_consumer", "datafusion_consumer"]  # , "duckdb_consumer"]
+)
 def test_projection_literals(consumer, request):
 
     def transform(module):
@@ -150,7 +172,9 @@ def test_filter(consumer, request):
 
     def transform(module):
         table = _orders(module)
-        return table.filter(module.literal(True))
+        return table.filter(module.literal(True)).filter(
+            table["order_id"] == table["fk_store_id"]
+        )
 
     ibis_expr = transform(ibis)
     sf_expr = transform(subframe)

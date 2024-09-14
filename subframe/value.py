@@ -10,6 +10,10 @@ def substrait_type_from_substrait_str(data_type: str) -> stt.Type:
         return stt.Type(i64=stt.Type.I64(nullability=stt.Type.NULLABILITY_NULLABLE))
     elif data_type == "fp64":
         return stt.Type(fp64=stt.Type.FP64(nullability=stt.Type.NULLABILITY_NULLABLE))
+    elif data_type == "boolean":
+        return stt.Type(
+            bool=stt.Type.Boolean(nullability=stt.Type.NULLABILITY_NULLABLE)
+        )
     else:
         raise Exception(f"Unknown data type {data_type}")
 
@@ -86,6 +90,48 @@ class Value:
             url="functions_arithmetic.yaml",
             func="subtract",
             col_name="Subtract",
+        )
+
+    def __eq__(self, other: "Value"):
+        return self._apply_function(
+            other=other,
+            url="functions_comparison.yaml",
+            func="equal",
+            col_name="Equals",
+        )
+
+    def __ne__(self, other: "Value"):
+        return self._apply_function(
+            other=other,
+            url="functions_comparison.yaml",
+            func="not_equal",
+            col_name="NotEquals",
+        )
+
+    def __lt__(self, other: "Value"):
+        return self._apply_function(
+            other=other, url="functions_comparison.yaml", func="lt", col_name="Less"
+        )
+
+    def __le__(self, other: "Value"):
+        return self._apply_function(
+            other=other,
+            url="functions_comparison.yaml",
+            func="lte",
+            col_name="LessEqual",
+        )
+
+    def __gt__(self, other: "Value"):
+        return self._apply_function(
+            other=other, url="functions_comparison.yaml", func="gt", col_name="Greater"
+        )
+
+    def __ge__(self, other: "Value"):
+        return self._apply_function(
+            other=other,
+            url="functions_comparison.yaml",
+            func="gte",
+            col_name="GreaterEqual",
         )
 
 
