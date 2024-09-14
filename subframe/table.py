@@ -86,8 +86,6 @@ class Table:
     ):
         combined_exprs = self._to_values(exprs, named_exprs)
 
-        extensions = self._merged_extensions(combined_exprs)
-
         mapping_counter = itertools.count(len(self.plan.names))
 
         rel = stalg.Rel(
@@ -114,7 +112,7 @@ class Table:
         return Table(
             plan=stalg.RelRoot(input=rel, names=names),
             struct=struct,
-            extensions=extensions,
+            extensions=self._merged_extensions(combined_exprs),
         )
 
     # TODO *predicates: ir.BooleanValue | Sequence[ir.BooleanValue] | IfAnyAll,
@@ -195,5 +193,5 @@ class Table:
             expression,
             data_type=self.struct.types[0],
             name="ScalarSubquery()",  # TODO why??
-            ## TODO extensions
+            extensions=self.extensions,
         )

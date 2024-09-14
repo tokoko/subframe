@@ -167,7 +167,14 @@ def test_aggregate_group_by(consumer, request):
         table = _orders(module)
         return (
             table.group_by(fk_store_id="fk_store_id")
-            .agg(table["order_total"].max(), table["order_total"].min())
+            .agg(
+                table["order_total"].count(),
+                table["order_total"].max(),
+                table["order_total"].min(),
+                # table["order_total"].median(),
+                table["order_total"].mean(),
+                # table["order_total"].mode(),
+            )
             .filter(module.literal(True))  # TODO datafusion workaround, remove later
         )
 

@@ -23,18 +23,30 @@ class ExtensionRegistry:
         content = yaml.load(body, Loader=yaml.FullLoader)
 
         if "scalar_functions" in content:
-            self.registry[url]["scalar_functions"] = {
-                f["name"]: ExtensionFunction(f, self.num_functions + i)
-                for i, f in enumerate(content["scalar_functions"])
-            }
+            self.registry[url]["scalar_functions"] = {}
+            for i, f in enumerate(content["scalar_functions"]):
+                if f["name"] in self.registry[url]["scalar_functions"]:
+                    self.registry[url]["scalar_functions"][f["name"]].append(
+                        ExtensionFunction(f, self.num_functions + i)
+                    )
+                else:
+                    self.registry[url]["scalar_functions"][f["name"]] = [
+                        ExtensionFunction(f, self.num_functions + i)
+                    ]
 
             self.num_functions += len(content["scalar_functions"])
 
         if "aggregate_functions" in content:
-            self.registry[url]["aggregate_functions"] = {
-                f["name"]: ExtensionFunction(f, self.num_functions + i)
-                for i, f in enumerate(content["aggregate_functions"])
-            }
+            self.registry[url]["aggregate_functions"] = {}
+            for i, f in enumerate(content["aggregate_functions"]):
+                if f["name"] in self.registry[url]["aggregate_functions"]:
+                    self.registry[url]["aggregate_functions"][f["name"]].append(
+                        ExtensionFunction(f, self.num_functions + i)
+                    )
+                else:
+                    self.registry[url]["aggregate_functions"][f["name"]] = [
+                        ExtensionFunction(f, self.num_functions + i)
+                    ]
 
             self.num_functions += len(content["aggregate_functions"])
 

@@ -43,9 +43,16 @@ class Value:
                 f"https://github.com/substrait-io/substrait/blob/main/extensions/{url}"
             )
 
-        res = registry.lookup_scalar_function(url, func).lookup_signature(
-            [self.data_type.WhichOneof("kind"), other.data_type.WhichOneof("kind")]
-        )
+        functions = registry.lookup_scalar_function(url, func)
+
+        res = None
+
+        for f in functions:
+            res = f.lookup_signature(
+                [self.data_type.WhichOneof("kind"), other.data_type.WhichOneof("kind")]
+            )
+            if res:
+                break
 
         output_type = substrait_type_from_substrait_str(res[2]["return"])
 
@@ -104,9 +111,14 @@ class Column(Value):
                 f"https://github.com/substrait-io/substrait/blob/main/extensions/{url}"
             )
 
-        res = registry.lookup_aggregate_function(url, func).lookup_signature(
-            [self.data_type.WhichOneof("kind")]
-        )
+        functions = registry.lookup_aggregate_function(url, func)
+
+        res = None
+
+        for f in functions:
+            res = f.lookup_signature([self.data_type.WhichOneof("kind")])
+            if res:
+                break
 
         output_type = substrait_type_from_substrait_str(res[2]["return"])
 
@@ -138,6 +150,30 @@ class Column(Value):
             url="functions_arithmetic.yaml",
             func="min",
             col_name="Min",
+        )
+
+    def mean(self):
+
+        return self._apply_aggregate_function(
+            url="functions_arithmetic.yaml",
+            func="avg",
+            col_name="Mean",
+        )
+
+    def mode(self):
+
+        return self._apply_aggregate_function(
+            url="functions_arithmetic.yaml",
+            func="mode",
+            col_name="Mode",
+        )
+
+    def count(self):
+
+        return self._apply_aggregate_function(
+            url="functions_aggregate_generic.yaml",
+            func="count",
+            col_name="Count",
         )
 
 

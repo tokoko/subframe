@@ -5,8 +5,13 @@ class ExtensionFunction:
 
     def lookup_signature(self, args: list[str]):
         for impl in self.function_definition["impls"]:
-            impl_args = impl["args"]
-            if len(impl_args) == len(args) and args == [x["value"] for x in impl_args]:
+            impl_args = impl.get("args", [])
+            if len(impl_args) == len(args) and all(
+                [
+                    x == y or y == "any"
+                    for x, y in zip(args, [x["value"] for x in impl_args])
+                ]
+            ):
                 return (
                     self.anchor,
                     self.function_definition["name"]
