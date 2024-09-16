@@ -90,3 +90,9 @@ def literal(value: Any, type: str = None) -> Value:
         )
     else:
         raise Exception("Unknown literal")
+
+
+def to_sql(table: Table) -> str:
+    from subframe.sql import translate_plan
+
+    return translate_plan(table.to_plan())

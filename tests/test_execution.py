@@ -127,7 +127,15 @@ def test_projection(consumer, request):
 
 
 @pytest.mark.parametrize(
-    "consumer", ["acero_consumer", "datafusion_consumer"]  # , "duckdb_consumer"]
+    "consumer",
+    [
+        "acero_consumer",
+        "datafusion_consumer",
+        pytest.param(
+            "duckdb_consumer",
+            marks=[pytest.mark.xfail(Exception, reason="Unimplemented")],
+        ),
+    ],
 )
 def test_projection_comparisions(consumer, request):
 
@@ -149,7 +157,15 @@ def test_projection_comparisions(consumer, request):
 
 
 @pytest.mark.parametrize(
-    "consumer", ["acero_consumer", "datafusion_consumer"]  # , "duckdb_consumer"]
+    "consumer",
+    [
+        "acero_consumer",
+        "datafusion_consumer",
+        pytest.param(
+            "duckdb_consumer",
+            marks=[pytest.mark.xfail(Exception, reason="Unimplemented")],
+        ),
+    ],
 )
 def test_projection_literals(consumer, request):
 
@@ -166,7 +182,15 @@ def test_projection_literals(consumer, request):
 
 
 @pytest.mark.parametrize(
-    "consumer", ["acero_consumer", "datafusion_consumer"]  # , "duckdb_consumer"]
+    "consumer",
+    [
+        "acero_consumer",
+        "datafusion_consumer",
+        pytest.param(
+            "duckdb_consumer",
+            marks=[pytest.mark.xfail(Exception, reason="Unimplemented")],
+        ),
+    ],
 )
 def test_filter(consumer, request):
 
@@ -183,7 +207,15 @@ def test_filter(consumer, request):
 
 
 @pytest.mark.parametrize(
-    "consumer", ["acero_consumer", "datafusion_consumer"]  # , "duckdb_consumer"]
+    "consumer",
+    [
+        "acero_consumer",
+        "datafusion_consumer",
+        pytest.param(
+            "duckdb_consumer",
+            marks=[pytest.mark.xfail(Exception, reason="Unimplemented")],
+        ),
+    ],
 )
 def test_aggregate_group_by(consumer, request):
 
@@ -209,7 +241,15 @@ def test_aggregate_group_by(consumer, request):
 
 
 @pytest.mark.parametrize(
-    "consumer", ["acero_consumer", "datafusion_consumer"]  # , "duckdb_consumer"]
+    "consumer",
+    [
+        "acero_consumer",
+        "datafusion_consumer",
+        pytest.param(
+            "duckdb_consumer",
+            marks=[pytest.mark.xfail(Exception, reason="Unimplemented")],
+        ),
+    ],
 )
 def test_aggregate(consumer, request):
 
@@ -231,8 +271,18 @@ def test_aggregate(consumer, request):
 @pytest.mark.parametrize(
     "consumer",
     [
-        "datafusion_consumer"
-    ],  # "acero_consumer", "datafusion_consumer", "duckdb_consumer"]
+        pytest.param(
+            "acero_consumer",
+            marks=[
+                pytest.mark.xfail(pa.ArrowNotImplementedError, reason="Unimplemented")
+            ],
+        ),
+        "datafusion_consumer",
+        pytest.param(
+            "duckdb_consumer",
+            marks=[pytest.mark.xfail(Exception, reason="Unimplemented")],
+        ),
+    ],
 )
 def test_scalar_subquery(consumer, request):
 

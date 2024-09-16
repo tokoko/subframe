@@ -19,12 +19,6 @@ table = orders.select(
     two=subframe.literal(2),
 )
 
-substrait_plan = table.to_plan()
-
-from subframe.sql import translate_plan
-
 # No dialect support yet, tested with duckdb
-# Queries are a lot uglier than ibis alternatives because substrait doesn't keep track of intermediate field names
-sql = translate_plan(substrait_plan)
-
+sql = subframe.to_sql(table)
 print(sql)
