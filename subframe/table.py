@@ -118,7 +118,8 @@ class Table:
     # TODO *predicates: ir.BooleanValue | Sequence[ir.BooleanValue] | IfAnyAll,
     def filter(self, *predicates: Value):
         assert len(predicates) == 1
-        predicate = predicates[0]  # TODO ignores all predicates except the first one
+        # TODO ignores all predicates except the first one
+        predicate = predicates[0]
         rel = stalg.Rel(
             filter=stalg.FilterRel(
                 input=self.plan.input, condition=predicate.expression
@@ -181,6 +182,17 @@ class Table:
             plan=stalg.RelRoot(input=rel, names=names),
             struct=struct,
             extensions=self._merged_extensions([expr for expr in metrics]),
+        )
+
+    def limit(self, n: int | None, offset: int):
+        rel = stalg.Rel(
+            fetch=stalg.FetchRel(input=self.plan.input, offset=offset, count=n)
+        )
+
+        return Table(
+            plan=stalg.RelRoot(input=rel, names=self.plan.names),
+            struct=self.struct,
+            extensions=self.extensions,
         )
 
     def as_scalar(self):
