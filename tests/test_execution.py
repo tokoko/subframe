@@ -222,8 +222,7 @@ def test_aggregate_group_by(consumer, request):
     def transform(module):
         table = _orders(module)
         return (
-            table.group_by(fk_store_id="fk_store_id")
-            .agg(
+            table.group_by(fk_store_id="fk_store_id").agg(
                 table["order_total"].count(),
                 table["order_total"].max(),
                 table["order_total"].min(),
@@ -231,7 +230,8 @@ def test_aggregate_group_by(consumer, request):
                 table["order_total"].mean(),
                 # table["order_total"].mode(),
             )
-            .filter(module.literal(True))  # TODO datafusion workaround, remove later
+            # TODO datafusion workaround, remove later
+            .filter(module.literal(True))
         )
 
     ibis_expr = transform(ibis)
@@ -261,6 +261,25 @@ def test_aggregate(consumer, request):
         ).filter(
             module.literal(True)
         )  # TODO datafusion workaround, remove later
+
+    ibis_expr = transform(ibis)
+    sf_expr = transform(subframe)
+
+    run_parity_test(request.getfixturevalue(consumer), ibis_expr, sf_expr)
+
+
+@pytest.mark.parametrize(
+    "consumer",
+    [
+        "acero_consumer",
+        "datafusion_consumer",
+    ],
+)
+def test_limit(consumer, request):
+
+    def transform(module):
+        table = _orders(module)
+        return table.limit(2, 0)
 
     ibis_expr = transform(ibis)
     sf_expr = transform(subframe)
