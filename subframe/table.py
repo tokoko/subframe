@@ -195,6 +195,24 @@ class Table:
             extensions=self.extensions,
         )
 
+    def union(self, table: "Table", *rest: "Table", distinct: bool = True):
+        rel = stalg.Rel(
+            set=stalg.SetRel(
+                inputs=[self.plan.input, table.plan.input],
+                op=(
+                    stalg.SetRel.SetOp.SET_OP_UNION_DISTINCT
+                    if distinct
+                    else stalg.SetRel.SetOp.SET_OP_UNION_ALL
+                ),
+            )
+        )
+
+        return Table(
+            plan=stalg.RelRoot(input=rel, names=self.plan.names),
+            struct=self.struct,
+            extensions=self.extensions,
+        )
+
     def as_scalar(self):
         expression = stalg.Expression(
             subquery=stalg.Expression.Subquery(

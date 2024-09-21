@@ -290,6 +290,60 @@ def test_limit(consumer, request):
 @pytest.mark.parametrize(
     "consumer",
     [
+        "acero_consumer",
+        "datafusion_consumer",
+        pytest.param(
+            "duckdb_consumer",
+            marks=[pytest.mark.xfail(Exception, reason="Unimplemented")],
+        ),
+    ],
+)
+def test_union_all(consumer, request):
+
+    def transform(module):
+        t1 = _orders(module)
+        t2 = _orders(module)
+        return t1.union(t2, distinct=False)
+
+    ibis_expr = transform(ibis)
+    sf_expr = transform(subframe)
+
+    run_parity_test(request.getfixturevalue(consumer), ibis_expr, sf_expr)
+
+
+@pytest.mark.parametrize(
+    "consumer",
+    [
+        pytest.param(
+            "acero_consumer",
+            marks=[pytest.mark.xfail(Exception, reason="Unimplemented")],
+        ),
+        pytest.param(
+            "datafusion_consumer",
+            marks=[pytest.mark.xfail(Exception, reason="Unimplemented")],
+        ),
+        pytest.param(
+            "duckdb_consumer",
+            marks=[pytest.mark.xfail(Exception, reason="Unimplemented")],
+        ),
+    ],
+)
+def test_union_distinct(consumer, request):
+
+    def transform(module):
+        t1 = _orders(module)
+        t2 = _orders(module)
+        return t1.union(t2)
+
+    ibis_expr = transform(ibis)
+    sf_expr = transform(subframe)
+
+    run_parity_test(request.getfixturevalue(consumer), ibis_expr, sf_expr)
+
+
+@pytest.mark.parametrize(
+    "consumer",
+    [
         pytest.param(
             "acero_consumer",
             marks=[
