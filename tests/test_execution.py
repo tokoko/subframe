@@ -20,7 +20,8 @@ orders_raw = [
     ("order_total", "float", [10.0, 32.3, 32.0, 140.0]),
 ]
 
-stores_raw = [("store_id", "int64", [1, 2, 3]), ("city", "string", ["NY", "LA", "NY"])]
+stores_raw = [("store_id", "int64", [1, 2, 3]),
+              ("city", "string", ["NY", "LA", "NY"])]
 
 customers_raw = [
     ("customer_id", "int64", [10, 11, 13]),
@@ -273,6 +274,10 @@ def test_aggregate(consumer, request):
     [
         "acero_consumer",
         "datafusion_consumer",
+        pytest.param(
+            "duckdb_consumer",
+            marks=[pytest.mark.xfail(Exception, reason="Unimplemented")],
+        ),
     ],
 )
 def test_limit(consumer, request):
@@ -292,8 +297,143 @@ def test_limit(consumer, request):
     [
         pytest.param(
             "acero_consumer",
+            marks=[pytest.mark.xfail(Exception, reason="Unimplemented")],
+        ),
+        "datafusion_consumer",
+        pytest.param(
+            "duckdb_consumer",
+            marks=[pytest.mark.xfail(Exception, reason="Unimplemented")],
+        ),
+    ],
+)
+def test_union_all(consumer, request):
+
+    def transform(module):
+        t1 = _orders(module)
+
+        t2 = _orders(module)
+        t3 = _orders(module)
+        t1 = t1.select(
+            "order_id",
+            "description",
+            ids=t1["fk_store_id"] > t1["order_id"],
+        )
+        t2 = t2.select(
+            "order_id",
+            "description",
+            ids=t2["fk_store_id"] < t2["order_id"],
+        )
+        t3 = t3.select(
+            "order_id",
+            "description",
+            ids=t3["fk_store_id"] > t3["order_id"],
+        )
+        return t1.union(t2, t3, distinct=False)
+
+    ibis_expr = transform(ibis)
+    sf_expr = transform(subframe)
+
+    run_parity_test(request.getfixturevalue(consumer), ibis_expr, sf_expr)
+
+
+@pytest.mark.parametrize(
+    "consumer",
+    [
+        pytest.param(
+            "acero_consumer",
+            marks=[pytest.mark.xfail(Exception, reason="Unimplemented")],
+        ),
+        pytest.param(
+            "datafusion_consumer",
+            marks=[pytest.mark.xfail(Exception, reason="Unimplemented")],
+        ),
+        pytest.param(
+            "duckdb_consumer",
+            marks=[pytest.mark.xfail(Exception, reason="Unimplemented")],
+        ),
+    ],
+)
+def test_union_distinct(consumer, request):
+
+    def transform(module):
+        t1 = _orders(module)
+        t2 = _orders(module)
+        return t1.union(t2)
+
+    ibis_expr = transform(ibis)
+    sf_expr = transform(subframe)
+
+    run_parity_test(request.getfixturevalue(consumer), ibis_expr, sf_expr)
+
+
+@pytest.mark.parametrize(
+    "consumer",
+    [
+        pytest.param(
+            "acero_consumer",
+            marks=[pytest.mark.xfail(Exception, reason="Unimplemented")],
+        ),
+        pytest.param(
+            "datafusion_consumer",
+            marks=[pytest.mark.xfail(Exception, reason="Unimplemented")],
+        ),
+        pytest.param(
+            "duckdb_consumer",
+            marks=[pytest.mark.xfail(Exception, reason="Unimplemented")],
+        ),
+    ],
+)
+def test_intersect(consumer, request):
+
+    def transform(module):
+        t1 = _orders(module)
+        t2 = _orders(module)
+        return t1.intersect(t2, distinct=False)
+
+    ibis_expr = transform(ibis)
+    sf_expr = transform(subframe)
+
+    run_parity_test(request.getfixturevalue(consumer), ibis_expr, sf_expr)
+
+
+@pytest.mark.parametrize(
+    "consumer",
+    [
+        pytest.param(
+            "acero_consumer",
+            marks=[pytest.mark.xfail(Exception, reason="Unimplemented")],
+        ),
+        pytest.param(
+            "datafusion_consumer",
+            marks=[pytest.mark.xfail(Exception, reason="Unimplemented")],
+        ),
+        pytest.param(
+            "duckdb_consumer",
+            marks=[pytest.mark.xfail(Exception, reason="Unimplemented")],
+        ),
+    ],
+)
+def test_difference(consumer, request):
+
+    def transform(module):
+        t1 = _orders(module)
+        t2 = _orders(module)
+        return t1.intersect(t2, distinct=False)
+
+    ibis_expr = transform(ibis)
+    sf_expr = transform(subframe)
+
+    run_parity_test(request.getfixturevalue(consumer), ibis_expr, sf_expr)
+
+
+@pytest.mark.parametrize(
+    "consumer",
+    [
+        pytest.param(
+            "acero_consumer",
             marks=[
-                pytest.mark.xfail(pa.ArrowNotImplementedError, reason="Unimplemented")
+                pytest.mark.xfail(pa.ArrowNotImplementedError,
+                                  reason="Unimplemented")
             ],
         ),
         "datafusion_consumer",
@@ -311,7 +451,8 @@ def test_scalar_subquery(consumer, request):
 
         return orders.select(
             orders["fk_store_id"],
-            stores.aggregate(by=[], metrics=[stores["store_id"].max()]).as_scalar(),
+            stores.aggregate(
+                by=[], metrics=[stores["store_id"].max()]).as_scalar(),
         )
 
     ibis_expr = transform(ibis)
