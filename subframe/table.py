@@ -285,3 +285,25 @@ class Table:
             name="ScalarSubquery()",  # TODO why??
             extensions=self.extensions,
         )
+
+    # TODO add rest
+    def cross_join(
+        self, table: "Table", *rest: "Table", lname: str = "", rname: str = "_right"
+    ):
+        rel = stalg.Rel(
+            cross=stalg.CrossRel(
+                left=self.plan.input,
+                right=table.plan.input,
+            )
+        )
+
+        return Table(
+            plan=stalg.RelRoot(
+                input=rel, names=list(self.plan.names) + list(table.plan.names)
+            ),
+            struct=self._merge_structs(table.struct),
+            extensions=self._merged_extensions([table]),
+        )
+
+    def _merge_structs(self, struct):
+        return stt.Type.Struct(types=list(self.struct.types) + list(struct.types))
