@@ -199,7 +199,7 @@ class Table:
         )
 
     def union(self, table: "Table", *rest: "Table", distinct: bool = True):
-        tables = [table] + [t for t in rest]
+        tables = [table] + rest
         rel = stalg.Rel(
             set=stalg.SetRel(
                 inputs=[self.plan.input] + [t.plan.input for t in tables],
@@ -218,7 +218,7 @@ class Table:
         )
 
     def intersect(self, table: "Table", *rest: "Table", distinct: bool = True):
-        tables = [table] + [t for t in rest]
+        tables = [table] + rest
         rel = stalg.Rel(
             set=stalg.SetRel(
                 inputs=[self.plan.input] + [t.plan.input for t in tables],
@@ -237,7 +237,7 @@ class Table:
         )
 
     def difference(self, table: "Table", *rest: "Table", distinct: bool = True):
-        tables = [table] + [t for t in rest]
+        tables = [table] + rest
         rel = stalg.Rel(
             set=stalg.SetRel(
                 inputs=[self.plan.input] + [t.plan.input for t in tables],
