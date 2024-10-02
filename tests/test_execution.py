@@ -20,8 +20,7 @@ orders_raw = [
     ("order_total", "float", [10.0, 32.3, 32.0, 140.0]),
 ]
 
-stores_raw = [("store_id", "int64", [1, 2, 3]),
-              ("city", "string", ["NY", "LA", "NY"])]
+stores_raw = [("store_id", "int64", [1, 2, 3]), ("city", "string", ["NY", "LA", "NY"])]
 
 customers_raw = [
     ("customer_id", "int64", [10, 11, 13]),
@@ -429,11 +428,33 @@ def test_difference(consumer, request):
 @pytest.mark.parametrize(
     "consumer",
     [
+        "acero_consumer",
+        "datafusion_consumer",
+        pytest.param(
+            "duckdb_consumer",
+            marks=[pytest.mark.xfail(Exception, reason="Unimplemented")],
+        ),
+    ],
+)
+def test_order_by(consumer, request):
+
+    def transform(module):
+        table = _orders(module)
+        return table.order_by("fk_customer_id")
+
+    ibis_expr = transform(ibis)
+    sf_expr = transform(subframe)
+
+    run_parity_test(request.getfixturevalue(consumer), ibis_expr, sf_expr)
+
+
+@pytest.mark.parametrize(
+    "consumer",
+    [
         pytest.param(
             "acero_consumer",
             marks=[
-                pytest.mark.xfail(pa.ArrowNotImplementedError,
-                                  reason="Unimplemented")
+                pytest.mark.xfail(pa.ArrowNotImplementedError, reason="Unimplemented")
             ],
         ),
         "datafusion_consumer",
@@ -451,8 +472,7 @@ def test_scalar_subquery(consumer, request):
 
         return orders.select(
             orders["fk_store_id"],
-            stores.aggregate(
-                by=[], metrics=[stores["store_id"].max()]).as_scalar(),
+            stores.aggregate(by=[], metrics=[stores["store_id"].max()]).as_scalar(),
         )
 
     ibis_expr = transform(ibis)
