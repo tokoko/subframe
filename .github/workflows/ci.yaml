@@ -22,7 +22,7 @@ jobs:
       - name: Install uv
         run : curl -LsSf https://astral.sh/uv/install.sh | sh
       - name: Sync requirments
-        run : uv pip --system sync requirements.lock
+        run : uv pip sync --system requirements.lock
       - name: Run tests
         run : pytest
 
