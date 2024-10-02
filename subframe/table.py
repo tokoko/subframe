@@ -93,7 +93,8 @@ class Table:
                 input=self.plan.input,
                 common=stalg.RelCommon(
                     emit=stalg.RelCommon.Emit(
-                        output_mapping=[next(mapping_counter) for _ in combined_exprs]
+                        output_mapping=[next(mapping_counter)
+                                        for _ in combined_exprs]
                     )
                 ),
                 expressions=[c.expression for c in combined_exprs],
@@ -157,7 +158,8 @@ class Table:
                 input=self.plan.input,
                 groupings=[
                     stalg.AggregateRel.Grouping(
-                        grouping_expressions=[val.expression for val in combined_exprs]
+                        grouping_expressions=[
+                            val.expression for val in combined_exprs]
                     )
                 ],
                 measures=[
@@ -167,7 +169,8 @@ class Table:
             )
         )
 
-        names = [c._name for c in combined_exprs] + [expr.name for expr in metrics]
+        names = [c._name for c in combined_exprs] + \
+            [expr.name for expr in metrics]
 
         schema = [c.data_type for c in combined_exprs] + [
             expr.data_type for expr in metrics
@@ -196,9 +199,10 @@ class Table:
         )
 
     def union(self, table: "Table", *rest: "Table", distinct: bool = True):
+        tables = [table] + [t for t in rest]
         rel = stalg.Rel(
             set=stalg.SetRel(
-                inputs=[self.plan.input, table.plan.input],
+                inputs=[self.plan.input] + [t.plan.input for t in tables],
                 op=(
                     stalg.SetRel.SetOp.SET_OP_UNION_DISTINCT
                     if distinct
@@ -210,17 +214,18 @@ class Table:
         return Table(
             plan=stalg.RelRoot(input=rel, names=self.plan.names),
             struct=self.struct,
-            extensions=self.extensions,
+            extensions=self._merged_extensions(tables),
         )
 
     def intersect(self, table: "Table", *rest: "Table", distinct: bool = True):
+        tables = [table] + [t for t in rest]
         rel = stalg.Rel(
             set=stalg.SetRel(
-                inputs=[self.plan.input, table.plan.input],
+                inputs=[self.plan.input] + [t.plan.input for t in tables],
                 op=(
                     stalg.SetRel.SetOp.SET_OP_INTERSECTION_PRIMARY
                     if distinct
-                    else stalg.SetRel.SetOp.SET_OP_INTERSECTION_MULTISET
+                    else stalg.SetRel.SetOp.SET_OP_INTERSECTION_PRIMARY
                 ),
             )
         )
@@ -228,17 +233,18 @@ class Table:
         return Table(
             plan=stalg.RelRoot(input=rel, names=self.plan.names),
             struct=self.struct,
-            extensions=self.extensions,
+            extensions=self._merged_extensions(tables),
         )
 
     def difference(self, table: "Table", *rest: "Table", distinct: bool = True):
+        tables = [table] + [t for t in rest]
         rel = stalg.Rel(
             set=stalg.SetRel(
-                inputs=[self.plan.input, table.plan.input],
+                inputs=[self.plan.input] + [t.plan.input for t in tables],
                 op=(
                     stalg.SetRel.SetOp.SET_OP_MINUS_PRIMARY
                     if distinct
-                    else stalg.SetRel.SetOp.SET_OP_MINUS_MULTISET
+                    else stalg.SetRel.SetOp.SET_OP_MINUS_PRIMARY
                 ),
             )
         )
@@ -246,7 +252,7 @@ class Table:
         return Table(
             plan=stalg.RelRoot(input=rel, names=self.plan.names),
             struct=self.struct,
-            extensions=self.extensions,
+            extensions=self._merged_extensions(tables),
         )
 
     def as_scalar(self):
