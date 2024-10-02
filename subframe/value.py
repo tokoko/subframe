@@ -1,22 +1,6 @@
 from substrait.gen.proto import algebra_pb2 as stalg
 from substrait.gen.proto import type_pb2 as stt
 
-# from .table import Table
-
-
-def substrait_type_from_substrait_str(data_type: str) -> stt.Type:
-    data_type = data_type.replace("?", "")  # TODO
-    if data_type == "i64":
-        return stt.Type(i64=stt.Type.I64(nullability=stt.Type.NULLABILITY_NULLABLE))
-    elif data_type == "fp64":
-        return stt.Type(fp64=stt.Type.FP64(nullability=stt.Type.NULLABILITY_NULLABLE))
-    elif data_type == "boolean":
-        return stt.Type(
-            bool=stt.Type.Boolean(nullability=stt.Type.NULLABILITY_NULLABLE)
-        )
-    else:
-        raise Exception(f"Unknown data type {data_type}")
-
 
 class Value:
     def __init__(
@@ -42,28 +26,21 @@ class Value:
     def _apply_function(self, other: "Value", url: str, func: str, col_name: str):
         from subframe import registry
 
-        if not url.startswith("http"):
-            url = (
-                f"https://github.com/substrait-io/substrait/blob/main/extensions/{url}"
-            )
+        (func_entry, rtn) = registry.lookup_function(
+            url,
+            function_name=func,
+            signature=[
+                self.data_type,
+                other.data_type,
+            ],
+        )
 
-        functions = registry.lookup_scalar_function(url, func)
-
-        res = None
-
-        for f in functions:
-            res = f.lookup_signature(
-                [self.data_type.WhichOneof("kind"), other.data_type.WhichOneof("kind")]
-            )
-            if res:
-                break
-
-        output_type = substrait_type_from_substrait_str(res[2]["return"])
+        output_type = rtn
 
         return Value(
             expression=stalg.Expression(
                 scalar_function=stalg.Expression.ScalarFunction(
-                    function_reference=res[0],
+                    function_reference=func_entry.anchor,
                     output_type=output_type,
                     arguments=[
                         stalg.FunctionArgument(value=self.expression),
@@ -73,7 +50,7 @@ class Value:
             ),
             data_type=output_type,
             name=f"{col_name}({self._name}, {other._name})",
-            extensions={url: {res[1]: res[0]}},
+            extensions={func_entry.uri: {str(func_entry): func_entry.anchor}},
         )
 
     def __add__(self, other: "Value"):
@@ -152,24 +129,14 @@ class Column(Value):
     def _apply_aggregate_function(self, url: str, func: str, col_name: str):
         from subframe import registry
 
-        if not url.startswith("http"):
-            url = (
-                f"https://github.com/substrait-io/substrait/blob/main/extensions/{url}"
-            )
+        (func_entry, rtn) = registry.lookup_function(
+            url, function_name=func, signature=[self.data_type]
+        )
 
-        functions = registry.lookup_aggregate_function(url, func)
-
-        res = None
-
-        for f in functions:
-            res = f.lookup_signature([self.data_type.WhichOneof("kind")])
-            if res:
-                break
-
-        output_type = substrait_type_from_substrait_str(res[2]["return"])
+        output_type = rtn
 
         aggregate_function = stalg.AggregateFunction(
-            function_reference=res[0],
+            function_reference=func_entry.anchor,
             phase=stalg.AggregationPhase.AGGREGATION_PHASE_INITIAL_TO_RESULT,  # TODO
             arguments=[stalg.FunctionArgument(value=self.expression)],
             output_type=output_type,
@@ -178,7 +145,7 @@ class Column(Value):
         return AggregateValue(
             aggregate_function=aggregate_function,
             data_type=output_type,
-            extensions={url: {res[1]: res[0]}},
+            extensions={func_entry.uri: {str(func_entry): func_entry.anchor}},
             name=f"{col_name}({self._name})",
         )
 

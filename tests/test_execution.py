@@ -105,9 +105,9 @@ def duckdb_consumer():
 
 
 @pytest.mark.parametrize(
-    "consumer", ["acero_consumer", "datafusion_consumer", "duckdb_consumer"]
+    "consumer", ["acero_consumer", "datafusion_consumer" , "duckdb_consumer"]
 )
-def test_projection(consumer, request):
+def test_projection_simple(consumer, request):
 
     def transform(module):
         table = _orders(module)
@@ -123,6 +123,8 @@ def test_projection(consumer, request):
     ibis_expr = transform(ibis)
     sf_expr = transform(subframe)
 
+    print(sf_expr.to_plan())
+
     run_parity_test(request.getfixturevalue(consumer), ibis_expr, sf_expr)
 
 
@@ -131,10 +133,7 @@ def test_projection(consumer, request):
     [
         "acero_consumer",
         "datafusion_consumer",
-        pytest.param(
-            "duckdb_consumer",
-            marks=[pytest.mark.xfail(Exception, reason="Unimplemented")],
-        ),
+        "duckdb_consumer",
     ],
 )
 def test_projection_comparisions(consumer, request):
@@ -161,10 +160,7 @@ def test_projection_comparisions(consumer, request):
     [
         "acero_consumer",
         "datafusion_consumer",
-        pytest.param(
-            "duckdb_consumer",
-            marks=[pytest.mark.xfail(Exception, reason="Unimplemented")],
-        ),
+        "duckdb_consumer",
     ],
 )
 def test_projection_literals(consumer, request):

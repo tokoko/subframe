@@ -63,8 +63,8 @@ def translate_literal(literal: stalg.Expression.Literal, extension_functions):
 
     if literal_type == "i32":
         return literal.i32
-    # elif literal_type == "boolean":
-    #     return
+    elif literal_type == "boolean":
+        return literal.boolean
     else:
         raise Exception(f"Unknown literal_type {literal_type}")
 
@@ -98,6 +98,18 @@ def translate_scalar_function(
         return " + ".join(arguments)
     elif func == "subtract:i64_i64":
         return " - ".join(arguments)
+    elif func == "equal:any_any":
+        return " = ".join(arguments)
+    elif func == "not_equal:any_any":
+        return " != ".join(arguments)
+    elif func == "gt:any_any":
+        return " > ".join(arguments)
+    elif func == "gte:any_any":
+        return " >= ".join(arguments)
+    elif func == "lt:any_any":
+        return " < ".join(arguments)
+    elif func == "lte:any_any":
+        return " <= ".join(arguments)
     else:
         raise Exception(f"Unknown function {func}")
 
