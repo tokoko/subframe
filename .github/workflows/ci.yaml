@@ -1,0 +1,29 @@
+name: Run Tests
+
+on:
+  push:
+    branches:
+      - 'main'
+  pull_request:
+    branches:
+      - 'main'
+
+jobs:
+  tests:
+    runs_on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with: 
+          python-version: '3.10.12'
+      - name: Install uv
+        run : curl -LsSf https://astral.sh/uv/install.sh | sh
+      - name: Sync requirments
+        run : uv pip --system sync requirements.lock
+      - name: Run tests
+        run : pytest
+
+
