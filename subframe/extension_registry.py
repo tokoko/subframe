@@ -257,7 +257,6 @@ class FunctionEntry:
         parameters = {}
 
         if all([covers(y, x, parameters) for (x, y) in zipped_args]):
-            print(parameters)
             return evaluate(self.rtn, parameters)
 
 

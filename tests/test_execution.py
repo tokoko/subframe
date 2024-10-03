@@ -131,10 +131,7 @@ def test_projection(consumer, request):
     [
         "acero_consumer",
         "datafusion_consumer",
-        pytest.param(
-            "duckdb_consumer",
-            marks=[pytest.mark.xfail(Exception, reason="Unimplemented")],
-        ),
+        "duckdb_consumer",
     ],
 )
 def test_projection_comparisions(consumer, request):
@@ -161,10 +158,7 @@ def test_projection_comparisions(consumer, request):
     [
         "acero_consumer",
         "datafusion_consumer",
-        pytest.param(
-            "duckdb_consumer",
-            marks=[pytest.mark.xfail(Exception, reason="Unimplemented")],
-        ),
+        "duckdb_consumer",
     ],
 )
 def test_projection_literals(consumer, request):
@@ -172,7 +166,9 @@ def test_projection_literals(consumer, request):
     def transform(module):
         table = _orders(module)
         return table.select(
-            module.literal(1, type="int32").name("one"), module.literal(True)
+            module.literal(1, type="int32").name("one"),
+            module.literal(True),
+            module.literal(False),
         )
 
     ibis_expr = transform(ibis)
@@ -186,10 +182,7 @@ def test_projection_literals(consumer, request):
     [
         "acero_consumer",
         "datafusion_consumer",
-        pytest.param(
-            "duckdb_consumer",
-            marks=[pytest.mark.xfail(Exception, reason="Unimplemented")],
-        ),
+        "duckdb_consumer",
     ],
 )
 def test_filter(consumer, request):
