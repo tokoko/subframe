@@ -88,7 +88,7 @@ def to_parameterized_type(dtype: str):
     elif dtype == "interval_year":
         return ParameterizedType(interval_year=Type.IntervalYear())
     elif dtype.startswith("decimal") or dtype.startswith("DECIMAL"):
-        (_, scale, precision, _) = re.split(r"\W+", dtype)
+        (_, precision, scale, _) = re.split(r"\W+", dtype)
 
         return ParameterizedType(
             decimal=ParameterizedType.ParameterizedDecimal(
