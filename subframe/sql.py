@@ -63,8 +63,8 @@ def translate_literal(literal: stalg.Expression.Literal, extension_functions):
 
     if literal_type == "i32":
         return literal.i32
-    # elif literal_type == "boolean":
-    #     return
+    elif literal_type == "boolean":
+        return literal.boolean
     else:
         raise Exception(f"Unknown literal_type {literal_type}")
 
@@ -98,6 +98,18 @@ def translate_scalar_function(
         return " + ".join(arguments)
     elif func == "subtract:i64_i64":
         return " - ".join(arguments)
+    elif func == "equal:any_any":
+        return " = ".join(arguments)
+    elif func == "not_equal:any_any":
+        return " != ".join(arguments)
+    elif func == "gt:any_any":
+        return " > ".join(arguments)
+    elif func == "gte:any_any":
+        return " >= ".join(arguments)
+    elif func == "lt:any_any":
+        return " < ".join(arguments)
+    elif func == "lte:any_any":
+        return " <= ".join(arguments)
     else:
         raise Exception(f"Unknown function {func}")
 
@@ -155,6 +167,19 @@ def translate_read(read_rel: stalg.ReadRel, extension_functions) -> SqlTable:
         raise Exception(f"Unknown read_type {read_type}")
 
 
+def translate_filter(filter_rel: stalg.FilterRel, extension_functions) -> SqlTable:
+    table = translate_rel(filter_rel.input, extension_functions)
+
+    context = ExpressionContext([f"t.{i}" for i in table.columns])
+
+    expr = translate_expression(filter_rel.condition, extension_functions, context)
+
+    return SqlTable(
+        f"""SELECT *\nFROM (\n{_add_padding(table.sql)}\n) AS t\nWHERE {expr}""",
+        table.columns,
+    )
+
+
 def translate_rel(rel: stalg.Rel, extension_functions) -> SqlTable:
     rel_type = rel.WhichOneof("rel_type")
 
@@ -162,6 +187,8 @@ def translate_rel(rel: stalg.Rel, extension_functions) -> SqlTable:
         return translate_project(rel.project, extension_functions)
     elif rel_type == "read":
         return translate_read(rel.read, extension_functions)
+    elif rel_type == "filter":
+        return translate_filter(rel.filter, extension_functions)
     else:
         raise Exception(f"Unknown rel_type {rel_type}")
 
