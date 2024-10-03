@@ -85,7 +85,7 @@ def bool():
     return Type(bool=Type.Boolean())
 
 
-def decimal(scale, precision):
+def decimal(precision, scale):
     return Type(decimal=Type.Decimal(scale=scale, precision=precision))
 
 

@@ -4,7 +4,7 @@ version = "0.0.1"
 requires-python = ">=3.9"
 dependencies = [
     "ibis-framework[duckdb]",
-    "pyparsing",
+    "antlr4-python3-runtime",
     "ibis-substrait",
     "pyarrow",
     "pytest",
