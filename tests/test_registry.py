@@ -1,7 +1,7 @@
 import yaml
 
 from substrait.gen.proto.type_pb2 import Type
-from subframe.extension_registry import FunctionRegistry
+from subframe.extension_registry import ExtensionRegistry
 
 content = """%YAML 1.2
 ---
@@ -64,11 +64,19 @@ scalar_functions:
           - name: y
             value: decimal<S1,S2>
         return: decimal<P1 + 1,S2 + 1>
-
+  - name: "test_median"
+    impls:
+      - args:
+          - name: precision
+            options: [ EXACT, APPROXIMATE ]
+          - name: x
+            value: i8
+        nullability: DECLARED_OUTPUT
+        return: i8
 """
 
 
-registry = FunctionRegistry()
+registry = ExtensionRegistry()
 
 registry.register_extension_dict(yaml.safe_load(content), uri="test")
 
@@ -187,4 +195,26 @@ def test_decimal_violates_constraint():
             signature=[decimal(10, 8), decimal(12, 10)],
         )
         is None
+    )
+
+
+def test_required_enum_fails():
+    assert (
+        registry.lookup_function(
+            uri="test",
+            function_name="test_median",
+            signature=[i8()],
+        )
+        is None
+    )
+
+
+def test_required_enum():
+    assert (
+        registry.lookup_function(
+            uri="test",
+            function_name="test_median",
+            signature=["EXACT", i8()],
+        )[1]
+        == i8()
     )

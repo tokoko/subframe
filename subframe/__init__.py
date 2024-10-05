@@ -5,9 +5,9 @@ from substrait.gen.proto import type_pb2 as stt
 from substrait.gen.proto import algebra_pb2 as stalg
 from .table import Table
 from .value import Value
-from .extension_registry import FunctionRegistry
+from .extension_registry import ExtensionRegistry
 
-registry = FunctionRegistry()
+registry = ExtensionRegistry()
 
 
 def substrait_type_from_string(type: str):

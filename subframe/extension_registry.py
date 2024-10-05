@@ -210,14 +210,13 @@ def covers(dtype: Type, parameterized_type: ParameterizedType, parameters: dict)
 
 
 class FunctionEntry:
-    def __init__(self, name: str) -> None:
+    def __init__(self, uri: str, name: str) -> None:
+        self.uri: str = uri
         self.name = name
         self.options: Mapping[str, Any] = {}
-        self.arg_names: list = []
         self.normalized_inputs: list = []
-        self.uri: str = ""
         self.anchor = next(id_generator)
-        self.value_arguments = []
+        self.arguments: list[Union[ParameterizedType, set[str]]] = []
 
     def parse(self, impl: Mapping[str, Any]) -> None:
         self.rtn = impl["return"]
@@ -226,10 +225,10 @@ class FunctionEntry:
         if input_args := impl.get("args", []):
             for val in input_args:
                 if typ := val.get("value"):
-                    self.value_arguments.append(to_parameterized_type(typ.strip("?")))
+                    self.arguments.append(to_parameterized_type(typ.strip("?")))
                     self.normalized_inputs.append(normalize_substrait_type_names(typ))
-                elif arg_name := val.get("name", None):
-                    self.arg_names.append(arg_name)
+                elif options := val.get("options", None):
+                    self.arguments.append(set(options))
 
         if options_args := impl.get("options", []):
             for val in options_args:
@@ -246,9 +245,9 @@ class FunctionEntry:
             min_args_allowed = self.variadic.get("min", 0)
             if len(signature) < min_args_allowed:
                 return None
-            inputs = [self.value_arguments[0]] * len(signature)
+            inputs = [self.arguments[0]] * len(signature)
         else:
-            inputs = self.value_arguments
+            inputs = self.arguments
         if len(inputs) != len(signature):
             return None
 
@@ -256,19 +255,20 @@ class FunctionEntry:
 
         parameters = {}
 
-        if all([covers(y, x, parameters) for (x, y) in zipped_args]):
+        if all(
+            [
+                (
+                    covers(actual, expected, parameters)
+                    if isinstance(expected, ParameterizedType)
+                    else actual in expected
+                )
+                for (expected, actual) in zipped_args
+            ]
+        ):
             return evaluate(self.rtn, parameters)
 
 
-def _parse_func(entry: Mapping[str, Any]) -> Iterator[FunctionEntry]:
-    for impl in entry.get("impls", []):
-        sf = FunctionEntry(entry["name"])
-        sf.parse(impl)
-
-        yield sf
-
-
-class FunctionRegistry:
+class ExtensionRegistry:
     def __init__(self) -> None:
         self._extension_mapping: dict = defaultdict(dict)
         self.id_generator = itertools.count(1)
@@ -278,50 +278,27 @@ class FunctionRegistry:
         for fpath in importlib_files("substrait.extensions").glob(  # type: ignore
             "functions*.yaml"
         ):
-            self.uri_aliases[fpath.name] = (
-                f"https://github.com/substrait-io/substrait/blob/main/extensions/{fpath.name}"
-            )
-            self.register_extension_yaml(fpath)
+            uri = f"https://github.com/substrait-io/substrait/blob/main/extensions/{fpath.name}"
+            self.uri_aliases[fpath.name] = uri
+            self.register_extension_yaml(fpath, uri)
 
     def register_extension_yaml(
         self,
         fname: Union[str, Path],
-        prefix: Optional[str] = None,
         uri: Optional[str] = None,
     ) -> None:
-        """Add a substrait extension YAML file to the ibis substrait compiler.
-
-        Parameters
-        ----------
-        fname
-            The filename of the extension yaml to register.
-        prefix
-            Custom prefix to use when constructing Substrait extension URI
-        uri
-            A custom URI to use for all functions defined within `fname`.
-            If passed, this value overrides `prefix`.
-
-
-        """
         fname = Path(fname)
         with open(fname) as f:  # type: ignore
             extension_definitions = yaml.safe_load(f)
-
-        prefix = (
-            prefix.strip("/")
-            if prefix is not None
-            else "https://github.com/substrait-io/substrait/blob/main/extensions"
-        )
-
-        uri = uri or f"{prefix}/{fname.name}"
 
         self.register_extension_dict(extension_definitions, uri)
 
     def register_extension_dict(self, definitions: dict, uri: str) -> None:
         for named_functions in definitions.values():
             for function in named_functions:
-                for func in _parse_func(function):
-                    func.uri = uri
+                for impl in function.get("impls", []):
+                    func = FunctionEntry(uri, function["name"])
+                    func.parse(impl)
                     if (
                         func.uri in self._extension_mapping
                         and function["name"] in self._extension_mapping[func.uri]
@@ -330,9 +307,8 @@ class FunctionRegistry:
                     else:
                         self._extension_mapping[func.uri][function["name"]] = [func]
 
-    # TODO add an optional return type check
     def lookup_function(
-        self, uri: str, function_name: str, signature: tuple
+        self, uri: str, function_name: str, signature: tuple[Union[Type, str]]
     ) -> Optional[tuple[FunctionEntry, Type]]:
         uri = self.uri_aliases.get(uri, uri)
 

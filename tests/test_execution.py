@@ -219,9 +219,40 @@ def test_aggregate_group_by(consumer, request):
                 table["order_total"].count(),
                 table["order_total"].max(),
                 table["order_total"].min(),
-                # table["order_total"].median(),
                 table["order_total"].mean(),
                 # table["order_total"].mode(),
+            )
+            # TODO datafusion workaround, remove later
+            .filter(module.literal(True))
+        )
+
+    ibis_expr = transform(ibis)
+    sf_expr = transform(subframe)
+
+    run_parity_test(request.getfixturevalue(consumer), ibis_expr, sf_expr)
+
+
+@pytest.mark.parametrize(
+    "consumer",
+    [
+        pytest.param(
+            "acero_consumer",
+            marks=[pytest.mark.xfail(Exception, reason="Unimplemented")],
+        ),
+        "datafusion_consumer",
+        pytest.param(
+            "duckdb_consumer",
+            marks=[pytest.mark.xfail(Exception, reason="Unimplemented")],
+        ),
+    ],
+)
+def test_aggregate_group_by_median(consumer, request):
+
+    def transform(module):
+        table = _orders(module)
+        return (
+            table.group_by(fk_store_id="fk_store_id").agg(
+                table["order_total"].median(),
             )
             # TODO datafusion workaround, remove later
             .filter(module.literal(True))

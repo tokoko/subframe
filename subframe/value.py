@@ -205,6 +205,15 @@ class Column(Value):
             col_name="Count",
         )
 
+    # TODO lacks required option
+    def median(self):
+
+        return self._apply_aggregate_function(
+            url="functions_arithmetic.yaml",
+            func="median",
+            col_name="Median",
+        )
+
 
 class AggregateValue:
     def __init__(
