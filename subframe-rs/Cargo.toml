@@ -1,0 +1,11 @@
+[package]
+name = "subframe-rs"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+substrait = "0.41.9"
+datafusion = "42.0.0"
+datafusion-substrait = "42.0.0"
+tokio = { version = "1.0", features = ["rt-multi-thread"] }
+
