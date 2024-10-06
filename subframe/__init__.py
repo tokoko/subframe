@@ -47,6 +47,48 @@ def table(schema, name):
     return Table(plan=plan, struct=struct)
 
 
+def pyarrow_to_substrait_type(pa_type):
+    import pyarrow
+
+    if pa_type == pyarrow.int64():
+        return stt.Type(i64=stt.Type.I64(nullability=stt.Type.NULLABILITY_NULLABLE))
+    elif pa_type == pyarrow.float64():
+        return stt.Type(fp64=stt.Type.FP64(nullability=stt.Type.NULLABILITY_NULLABLE))
+    elif pa_type == pyarrow.string():
+        return stt.Type(
+            string=stt.Type.String(nullability=stt.Type.NULLABILITY_NULLABLE)
+        )
+
+
+def named_table(name, conn):
+    pa_schema = conn.adbc_get_table_schema(name)
+
+    column_names = pa_schema.names
+    struct = stt.Type.Struct(
+        types=[
+            pyarrow_to_substrait_type(pa_schema.field(c).type) for c in column_names
+        ],
+        nullability=stt.Type.Nullability.NULLABILITY_NULLABLE,
+    )
+
+    schema = stt.NamedStruct(
+        names=column_names,
+        struct=struct,
+    )
+
+    rel = stalg.Rel(
+        read=stalg.ReadRel(
+            common=stalg.RelCommon(direct=stalg.RelCommon.Direct()),
+            base_schema=schema,
+            named_table=stalg.ReadRel.NamedTable(names=[name]),
+        )
+    )
+
+    plan: stalg.RelRoot = stalg.RelRoot(input=rel, names=column_names)
+
+    return Table(plan=plan, struct=struct)
+
+
 def literal(value: Any, type: str = None) -> Value:
     # TODO assumes i32
 
@@ -57,7 +99,7 @@ def literal(value: Any, type: str = None) -> Value:
         return Value(
             expression=expr,
             data_type=stt.Type(
-                i32=stt.Type.I32(nullability=stt.Type.NULLABILITY_NULLABLE)
+                i64=stt.Type.I64(nullability=stt.Type.NULLABILITY_NULLABLE)
             ),
         )
     elif ptype(value) == bool:

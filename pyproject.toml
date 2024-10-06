@@ -8,7 +8,8 @@ dependencies = [
     "ibis-substrait",
     "pyarrow",
     "pytest",
-    "datafusion"
+    "datafusion",
+    "adbc_driver_manager"
 ]
 
 [tool.pixi.project]
