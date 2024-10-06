@@ -32,7 +32,7 @@ class Table:
             table=self,
         )
 
-    def to_plan(self) -> stp.Plan:
+    def to_substrait(self) -> stp.Plan:
         return stp.Plan(
             extension_uris=[
                 ste.SimpleExtensionURI(extension_uri_anchor=i, uri=e)

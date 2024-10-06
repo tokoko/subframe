@@ -75,7 +75,7 @@ def run_parity_test(
     res_duckdb = sort_pyarrow_table(run_query_duckdb(expr, datasets))
 
     # plan_ibis = SubstraitCompiler().compile(expr)
-    plan_sf = expr_sf.to_plan()
+    plan_sf = expr_sf.to_substrait()
     res_sf = sort_pyarrow_table(consumer.execute(plan_sf))
     # res_ibis = sort_pyarrow_table(consumer.execute(plan_ibis))
 
