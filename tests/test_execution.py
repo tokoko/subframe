@@ -167,8 +167,8 @@ def test_projection_literals(consumer, request):
         table = _orders(module)
         return table.select(
             module.literal(1, type="int32").name("one"),
-            module.literal(True),
-            module.literal(False),
+            module.literal(True).name("true"),
+            module.literal(False).name("false"),
         )
 
     ibis_expr = transform(ibis)
@@ -519,25 +519,17 @@ def test_if_then(consumer, request):
     def transform(module):
         t1 = _orders(module)
 
-        c1 = module.case().when(
-            t1["order_id"] == module.literal(1), module.literal(10, type="int32")
-        )
-        c2 = c1.when(
-            t1["fk_store_id"] > module.literal(1), module.literal(11, type="int32")
-        )
-        print(c2)
-        lit = module.literal(12, type="int32")
-        print(lit)
-        c3 = c2.else_(lit)
-        c4 = c3.end()
-
         return t1.select(
             some=module.case()
-            .when(t1["order_id"] == module.literal(1), module.literal(10, type="int32"))
             .when(
-                t1["fk_store_id"] > module.literal(1), module.literal(11, type="int32")
+                t1["order_id"] == module.literal(1, type="int64"),
+                module.literal(10, type="int64"),
             )
-            .else_(module.literal(12, type="int32"))
+            .when(
+                t1["fk_store_id"] > module.literal(1, type="int64"),
+                module.literal(11, type="int64"),
+            )
+            .else_(module.literal(12, type="int64"))
             .end()
         )
 
