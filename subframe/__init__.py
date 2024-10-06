@@ -5,6 +5,7 @@ from substrait.gen.proto import type_pb2 as stt
 from substrait.gen.proto import algebra_pb2 as stalg
 from .table import Table
 from .value import Value
+from .utils import infer_literal_type
 from .extension_registry import FunctionRegistry
 from .case_builder import CaseBuilder
 
@@ -95,31 +96,39 @@ def named_table(name, conn):
 
 
 def literal(value: Any, type: str = None) -> Value:
-    # TODO assumes i32
+    if not type:
+        if ptype(value) == int:
+            type = "i32"
+        elif ptype(value) == bool:
+            type = "boolean"
+        elif ptype(value) == str:
+            type = "string"
 
-    if ptype(value) == int:
-        expr = stalg.Expression(
-            literal=stalg.Expression.Literal(i32=value, nullable=True)
-        )
-        return Value(
-            expression=expr,
-            data_type=stt.Type(
-                i64=stt.Type.I64(nullability=stt.Type.NULLABILITY_NULLABLE)
-            ),
-        )
-    elif ptype(value) == bool:
-        expr = stalg.Expression(
-            literal=stalg.Expression.Literal(boolean=value, nullable=True)
-        )
-        return Value(
-            expression=expr,
-            data_type=stt.Type(
-                bool=stt.Type.Boolean(nullability=stt.Type.NULLABILITY_NULLABLE)
-            ),
-            name="True" if value else "False",
-        )
+    if type == "boolean":
+        literal = stalg.Expression.Literal(boolean=value, nullable=True)
+    elif type in ("i8", "int8"):
+        literal = stalg.Expression.Literal(i8=value, nullable=True)
+    elif type in ("i16", "int16"):
+        literal = stalg.Expression.Literal(i16=value, nullable=True)
+    elif type in ("i32", "int32"):
+        literal = stalg.Expression.Literal(i32=value, nullable=True)
+    elif type in ("i64", "int64"):
+        literal = stalg.Expression.Literal(i64=value, nullable=True)
+    elif type == "fp32":
+        literal = stalg.Expression.Literal(fp32=value, nullable=True)
+    elif type == "fp64":
+        literal = stalg.Expression.Literal(fp64=value, nullable=True)
+    elif type == "string":
+        literal = stalg.Expression.Literal(string=value, nullable=True)
     else:
-        raise Exception("Unknown literal")
+        raise Exception(f"Unknown literal type - {type}")
+
+    print(literal)
+
+    return Value(
+        expression=stalg.Expression(literal=literal),
+        data_type=infer_literal_type(literal),
+    )
 
 
 def to_sql(table: Table) -> str:
