@@ -17,5 +17,5 @@ with adbc_driver_duckdb.dbapi.connect(":memory:") as conn:
         table = subframe.named_table("AnswerToEverything", conn)
         table = table.select((table["ints"] + subframe.literal(100)).name("col"))
 
-        cur.execute(table.to_plan().SerializeToString())
+        cur.execute(table.to_substrait().SerializeToString())
         print(cur.fetch_arrow_table())

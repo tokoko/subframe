@@ -43,7 +43,7 @@ import subframe
 
 data = pyarrow.record_batch(
     [[1, 2, 3, 4], ["a", "b", "c", "d"]],
-    names = ["ints", "strs"],
+    names=["ints", "strs"],
 )
 
 with adbc_driver_duckdb.dbapi.connect(":memory:") as conn:
@@ -54,9 +54,8 @@ with adbc_driver_duckdb.dbapi.connect(":memory:") as conn:
         cur.executescript("LOAD substrait;")
 
         table = subframe.named_table("AnswerToEverything", conn)
-        table = table.select((table['ints'] + subframe.literal(100)).name("col"))
+        table = table.select((table["ints"] + subframe.literal(100)).name("col"))
 
-        cur.execute(table.to_plan().SerializeToString())
+        cur.execute(table.to_substrait().SerializeToString())
         print(cur.fetch_arrow_table())
-
 ```
