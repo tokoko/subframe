@@ -501,3 +501,47 @@ def test_cross_join(consumer, request):
     sf_expr = transform(subframe)
 
     run_parity_test(request.getfixturevalue(consumer), ibis_expr, sf_expr)
+
+
+@pytest.mark.parametrize(
+    "consumer",
+    [
+        "acero_consumer",
+        "datafusion_consumer",
+        pytest.param(
+            "duckdb_consumer",
+            marks=[pytest.mark.xfail(Exception, reason="Unimplemented")],
+        ),
+    ],
+)
+def test_if_then(consumer, request):
+
+    def transform(module):
+        t1 = _orders(module)
+
+        c1 = module.case().when(
+            t1["order_id"] == module.literal(1), module.literal(10, type="int32")
+        )
+        c2 = c1.when(
+            t1["fk_store_id"] > module.literal(1), module.literal(11, type="int32")
+        )
+        print(c2)
+        lit = module.literal(12, type="int32")
+        print(lit)
+        c3 = c2.else_(lit)
+        c4 = c3.end()
+
+        return t1.select(
+            some=module.case()
+            .when(t1["order_id"] == module.literal(1), module.literal(10, type="int32"))
+            .when(
+                t1["fk_store_id"] > module.literal(1), module.literal(11, type="int32")
+            )
+            .else_(module.literal(12, type="int32"))
+            .end()
+        )
+
+    ibis_expr = transform(ibis)
+    sf_expr = transform(subframe)
+
+    run_parity_test(request.getfixturevalue(consumer), ibis_expr, sf_expr)

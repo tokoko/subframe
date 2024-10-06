@@ -6,8 +6,13 @@ from substrait.gen.proto import algebra_pb2 as stalg
 from .table import Table
 from .value import Value
 from .extension_registry import FunctionRegistry
+from .case_builder import CaseBuilder
 
 registry = FunctionRegistry()
+
+
+def case():
+    return CaseBuilder()
 
 
 def substrait_type_from_string(type: str):
@@ -120,4 +125,4 @@ def literal(value: Any, type: str = None) -> Value:
 def to_sql(table: Table) -> str:
     from subframe.sql import translate_plan
 
-    return translate_plan(table.to_plan())
+    return translate_plan(table.to_substrait())
