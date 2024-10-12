@@ -5,6 +5,19 @@ from substrait.gen.proto.algebra_pb2 import Rel, RelCommon
 import substrait.gen.proto.algebra_pb2 as stalg
 
 
+def merge_extensions(extensions, exprs):
+    for c in exprs:
+        if c.extensions:
+            for k, v in c.extensions.items():
+                if k in extensions:
+                    for k1, v1 in c.extensions[k].items():
+                        extensions[k][k1] = v1
+                else:
+                    extensions[k] = v
+
+    return extensions
+
+
 def to_substrait_type(dtype: str):
     if dtype in ("bool", "boolean"):
         return Type(bool=Type.Boolean())

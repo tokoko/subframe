@@ -14,7 +14,7 @@ orders = subframe.table([(x[0], x[1]) for x in orders_raw], name="orders")
 
 
 def test_inference_read():
-    assert orders.struct == infer_rel_schema(orders.plan.input)
+    assert orders.struct == infer_rel_schema(orders.rel)
 
 
 def test_inference_project_emit():
@@ -22,7 +22,7 @@ def test_inference_project_emit():
 
     removed_with_emit = stalg.Rel(
         project=stalg.ProjectRel(
-            input=orders.plan.input,
+            input=orders.rel,
             common=stalg.RelCommon(emit=stalg.RelCommon.Emit(output_mapping=[0, 2])),
         )
     )
@@ -32,21 +32,21 @@ def test_inference_project_emit():
 
 def test_inference_filter():
     table = orders.filter(orders["order_id"] > orders["fk_store_id"])
-    assert table.struct == infer_rel_schema(table.plan.input)
+    assert table.struct == infer_rel_schema(table.rel)
 
 
 def test_inference_project_simple():
     table = orders.select("order_id", "fk_store_id")
-    assert table.struct == infer_rel_schema(table.plan.input)
+    assert table.struct == infer_rel_schema(table.rel)
 
 
 def test_inference_project_literal():
     table = orders.select("order_id", "fk_store_id", subframe.literal(True))
-    assert table.struct == infer_rel_schema(table.plan.input)
+    assert table.struct == infer_rel_schema(table.rel)
 
 
 def test_inference_project_scalar():
     table = orders.select(
         orders["order_id"] > orders["fk_store_id"], subframe.literal(True)
     )
-    assert table.struct == infer_rel_schema(table.plan.input)
+    assert table.struct == infer_rel_schema(table.rel)
