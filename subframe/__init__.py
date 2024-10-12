@@ -133,6 +133,34 @@ def literal(value: Any, type: str = None) -> Value:
     )
 
 
+def row_number():
+    from subframe import registry
+
+    (func_entry, rtn) = registry.lookup_function(
+        "functions_arithmetic.yaml",
+        function_name="row_number",
+        signature=[],
+    )
+
+    expression = stalg.Expression(
+        window_function=stalg.Expression.WindowFunction(
+            function_reference=func_entry.anchor,
+            arguments=[],
+            options=[],
+            phase=stalg.AggregationPhase.AGGREGATION_PHASE_INITIAL_TO_RESULT,
+            sorts=[],
+            partitions=[],
+        )
+    )
+
+    return Value(
+        expression=expression,
+        data_type=rtn,
+        name="RowNumber",
+        extensions={func_entry.uri: {str(func_entry): func_entry.anchor}}
+    )
+
+
 def to_sql(table: Table) -> str:
     from subframe.sql import translate_plan
 

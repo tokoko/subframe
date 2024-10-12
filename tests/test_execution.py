@@ -537,3 +537,29 @@ def test_if_then(consumer, request):
     sf_expr = transform(subframe)
 
     run_parity_test(request.getfixturevalue(consumer), ibis_expr, sf_expr)
+
+
+@pytest.mark.parametrize(
+    "consumer",
+    [
+        "acero_consumer",
+        "datafusion_consumer",
+        pytest.param(
+            "duckdb_consumer",
+            marks=[pytest.mark.xfail(Exception, reason="Unimplemented")],
+        ),
+    ],
+)
+def test_row_number(consumer, request):
+
+    def transform(module):
+        t1 = _orders(module)
+
+        return t1.select(
+            row_number=module.row_number() #.over(group_by=[t1['fk_store_id']], order_by=t1['order_total'])
+        )
+
+    ibis_expr = transform(ibis)
+    sf_expr = transform(subframe)
+
+    run_parity_test(request.getfixturevalue(consumer), ibis_expr, sf_expr)
