@@ -48,9 +48,11 @@ def table(schema, name):
         )
     )
 
-    plan: stalg.RelRoot = stalg.RelRoot(input=rel, names=column_names)
+    # plan: stalg.RelRoot = stalg.RelRoot(input=rel, names=column_names)
 
-    return Table(plan=plan, struct=struct)
+    return Table(
+        rel=rel, names=column_names, struct=struct, extensions={}, relations=[]
+    )
 
 
 def pyarrow_to_substrait_type(pa_type):

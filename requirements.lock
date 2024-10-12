@@ -6,9 +6,9 @@ antlr4-python3-runtime==4.13.2
     # via subframe (pyproject.toml)
 atpublic==5.0
     # via ibis-framework
-datafusion==41.0.0
+datafusion==42.0.0
     # via subframe (pyproject.toml)
-duckdb==1.1.0
+duckdb==1.1.1
     # via ibis-framework
 exceptiongroup==1.2.2
     # via pytest
@@ -24,7 +24,7 @@ markdown-it-py==3.0.0
     # via rich
 mdurl==0.1.2
     # via markdown-it-py
-numpy==2.1.1
+numpy==2.1.2
     # via
     #   ibis-framework
     #   pandas
@@ -34,7 +34,7 @@ packaging==24.1
     #   ibis-framework
     #   ibis-substrait
     #   pytest
-pandas==2.2.2
+pandas==2.2.3
     # via ibis-framework
 parsy==2.1
     # via ibis-framework
@@ -63,15 +63,15 @@ pytz==2024.2
     #   pandas
 pyyaml==6.0.2
     # via ibis-substrait
-rich==13.8.1
+rich==13.9.2
     # via ibis-framework
 six==1.16.0
     # via python-dateutil
-sqlglot==25.20.1
+sqlglot==25.20.2
     # via ibis-framework
 substrait==0.23.0
     # via ibis-substrait
-tomli==2.0.1
+tomli==2.0.2
     # via pytest
 toolz==0.12.1
     # via ibis-framework
@@ -80,5 +80,6 @@ typing-extensions==4.12.2
     #   adbc-driver-manager
     #   datafusion
     #   ibis-framework
-tzdata==2024.1
+    #   rich
+tzdata==2024.2
     # via pandas

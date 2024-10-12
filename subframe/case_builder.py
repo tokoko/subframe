@@ -1,18 +1,6 @@
 from substrait.gen.proto import algebra_pb2 as stalg
 from .value import Value
-
-
-def merge_extensions(extensions, exprs):
-    for c in exprs:
-        if c.extensions:
-            for k, v in c.extensions.items():
-                if k in extensions:
-                    for k1, v1 in c.extensions[k].items():
-                        extensions[k][k1] = v1
-                else:
-                    extensions[k] = v
-
-    return extensions
+from .utils import merge_extensions
 
 
 class CaseBuilder:
