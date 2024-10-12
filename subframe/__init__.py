@@ -157,7 +157,7 @@ def row_number():
         expression=expression,
         data_type=rtn,
         name="RowNumber",
-        extensions={func_entry.uri: {str(func_entry): func_entry.anchor}}
+        extensions={func_entry.uri: {str(func_entry): func_entry.anchor}},
     )
 
 

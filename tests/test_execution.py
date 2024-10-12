@@ -542,7 +542,10 @@ def test_if_then(consumer, request):
 @pytest.mark.parametrize(
     "consumer",
     [
-        "acero_consumer",
+        pytest.param(
+            "acero_consumer",
+            marks=[pytest.mark.xfail(Exception, reason="Unimplemented")],
+        ),
         "datafusion_consumer",
         pytest.param(
             "duckdb_consumer",
@@ -555,8 +558,11 @@ def test_row_number(consumer, request):
     def transform(module):
         t1 = _orders(module)
 
+        t1 = t1.select(row_number=module.row_number())
+
         return t1.select(
-            row_number=module.row_number() #.over(group_by=[t1['fk_store_id']], order_by=t1['order_total'])
+            row_number=t1["row_number"]
+            + module.literal(1 if module == ibis else 0, type="int64")
         )
 
     ibis_expr = transform(ibis)
