@@ -119,12 +119,18 @@ def infer_expression_type(
         return infer_literal_type(expression.literal)
     elif rex_type == "scalar_function":
         return expression.scalar_function.output_type
-    # WindowFunction window_function = 5;
-    # IfThen if_then = 6;
-    # SwitchExpression switch_expression = 7;
-    # SingularOrList singular_or_list = 8;
-    # MultiOrList multi_or_list = 9;
-    # Cast cast = 11;
+    elif rex_type == "window_function":
+        return expression.window_function.output_type
+    elif rex_type == "if_then":
+        return infer_expression_type(expression.if_then.ifs[0].then)
+    elif rex_type == "switch_expression":
+        return infer_expression_type(expression.switch_expression.ifs[0].then)
+    elif rex_type == "cast":
+        return expression.cast.type
+    elif rex_type == "singular_or_list" or rex_type == "multi_or_list":
+        return Type(
+            bool=Type.Boolean(nullability=stt.Type.Nullability.NULLABILITY_NULLABLE)
+        )
     # Subquery subquery = 12;
     # Nested nested = 13;
     else:

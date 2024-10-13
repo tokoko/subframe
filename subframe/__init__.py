@@ -125,11 +125,10 @@ def literal(value: Any, type: str = None) -> Value:
     else:
         raise Exception(f"Unknown literal type - {type}")
 
-    print(literal)
-
     return Value(
         expression=stalg.Expression(literal=literal),
         data_type=infer_literal_type(literal),
+        name=str(value),
     )
 
 

@@ -569,3 +569,32 @@ def test_row_number(consumer, request):
     sf_expr = transform(subframe)
 
     run_parity_test(request.getfixturevalue(consumer), ibis_expr, sf_expr)
+
+
+@pytest.mark.parametrize(
+    "consumer",
+    [
+        pytest.param(
+            "acero_consumer",
+            marks=[pytest.mark.xfail(Exception, reason="Unimplemented")],
+        ),
+        "datafusion_consumer",
+        pytest.param(
+            "duckdb_consumer",
+            marks=[pytest.mark.xfail(Exception, reason="Unimplemented")],
+        ),
+    ],
+)
+def test_lead_lag(consumer, request):
+
+    def transform(module):
+        t1 = _orders(module)
+
+        return t1.select(
+            t1["order_total"].lead(offset=2), t1["order_total"].lag(offset=2)
+        )
+
+    ibis_expr = transform(ibis)
+    sf_expr = transform(subframe)
+
+    run_parity_test(request.getfixturevalue(consumer), ibis_expr, sf_expr)
