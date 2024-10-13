@@ -4,20 +4,6 @@ from substrait.gen.proto import type_pb2 as stt
 # from .table import Table
 
 
-def substrait_type_from_substrait_str(data_type: str) -> stt.Type:
-    data_type = data_type.replace("?", "")  # TODO
-    if data_type == "i64":
-        return stt.Type(i64=stt.Type.I64(nullability=stt.Type.NULLABILITY_NULLABLE))
-    elif data_type == "fp64":
-        return stt.Type(fp64=stt.Type.FP64(nullability=stt.Type.NULLABILITY_NULLABLE))
-    elif data_type == "boolean":
-        return stt.Type(
-            bool=stt.Type.Boolean(nullability=stt.Type.NULLABILITY_NULLABLE)
-        )
-    else:
-        raise Exception(f"Unknown data type {data_type}")
-
-
 class Value:
     def __init__(
         self,
@@ -203,6 +189,66 @@ class Column(Value):
             url="functions_aggregate_generic.yaml",
             func="count",
             col_name="Count",
+        )
+
+    def _apply_window_function(
+        self, additional_arguments: list["Value"], url: str, func: str, col_name: str
+    ):
+        from subframe import registry
+
+        (func_entry, rtn) = registry.lookup_function(
+            url,
+            function_name=func,
+            signature=[
+                self.data_type,
+                *[a.data_type for a in additional_arguments],
+            ],
+        )
+
+        output_type = rtn
+
+        expression = stalg.Expression(
+            window_function=stalg.Expression.WindowFunction(
+                function_reference=func_entry.anchor,
+                arguments=[
+                    stalg.FunctionArgument(value=self.expression),
+                    *[
+                        stalg.FunctionArgument(value=a.expression)
+                        for a in additional_arguments
+                    ],
+                ],
+                options=[],
+                phase=stalg.AggregationPhase.AGGREGATION_PHASE_INITIAL_TO_RESULT,
+                sorts=[],
+                partitions=[],
+            )
+        )
+
+        return Value(
+            expression=expression,
+            data_type=output_type,
+            name=f"{col_name}({self._name}, {' ,'.join([a._name for a in additional_arguments])})",
+            extensions={func_entry.uri: {str(func_entry): func_entry.anchor}},
+        )
+
+    def lead(self, offset):  # TODO default
+        from subframe import literal
+
+        if type(offset) == int:
+            offset = literal(offset, type="i32")
+
+        return self._apply_window_function(
+            [offset], "functions_arithmetic.yaml", "lead", "Lead"
+        )
+
+    def lag(self, offset):  # TODO default
+        from subframe import literal
+
+        if type(offset) == int:
+            offset = literal(offset, type="i32")
+
+        return self._apply_window_function(
+            [offset], "functions_arithmetic.yaml", "lag", "Lag"
         )
 
 
