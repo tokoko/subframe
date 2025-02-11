@@ -38,4 +38,5 @@ class CaseBuilder:
             data_type=self.otherwise.data_type,  # TODO validate type, allow ommitin else
             name="IfThen",  # TODO update to match ibis
             extensions=self.extensions,
+            tables=[],  # TODO
         )

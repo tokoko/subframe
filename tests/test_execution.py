@@ -61,7 +61,7 @@ def run_query_duckdb(query, datasets):
     with tempfile.TemporaryDirectory() as tempdir:
         con = ibis.duckdb.connect(os.path.join(tempdir, "temp.db"))
         for table_name, pa_table in datasets.items():
-            con.create_table(name=table_name, obj=ibis.memtable(pa_table))
+            con.create_table(table_name, obj=ibis.memtable(pa_table))
 
         # TODO con.to_pyarrow(query) in duckdb backend doesn't work with latest ibis and pyarrow versions
         res = pa.Table.from_pandas(con.to_pandas(query))
@@ -276,7 +276,7 @@ def test_limit(consumer, request):
 
     def transform(module):
         table = _orders(module)
-        return table.limit(2, 0)
+        return table.limit(2, offset=0)
 
     ibis_expr = transform(ibis)
     sf_expr = transform(subframe)
@@ -496,6 +496,30 @@ def test_cross_join(consumer, request):
         t1 = _orders(module)
         t2 = _stores(module)
         return t1.cross_join(t2)
+
+    ibis_expr = transform(ibis)
+    sf_expr = transform(subframe)
+
+    run_parity_test(request.getfixturevalue(consumer), ibis_expr, sf_expr)
+
+
+@pytest.mark.parametrize(
+    "consumer",
+    [
+        "acero_consumer",
+        "datafusion_consumer",
+        pytest.param(
+            "duckdb_consumer",
+            marks=[pytest.mark.xfail(Exception, reason="Unimplemented")],
+        ),
+    ],
+)
+def test_inner_join(consumer, request):
+
+    def transform(module):
+        t1 = _orders(module)
+        t2 = _stores(module)
+        return t1.join(t2, predicates=[t1["fk_store_id"] == t2["store_id"]], how="left")
 
     ibis_expr = transform(ibis)
     sf_expr = transform(subframe)

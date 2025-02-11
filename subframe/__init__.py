@@ -129,6 +129,7 @@ def literal(value: Any, type: str = None) -> Value:
         expression=stalg.Expression(literal=literal),
         data_type=infer_literal_type(literal),
         name=str(value),
+        tables=[],
     )
 
 
@@ -157,6 +158,7 @@ def row_number():
         data_type=rtn,
         name="RowNumber",
         extensions={func_entry.uri: {str(func_entry): func_entry.anchor}},
+        tables=[],
     )
 
 
