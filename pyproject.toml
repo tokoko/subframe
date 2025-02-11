@@ -3,7 +3,7 @@ name = "subframe"
 version = "0.0.1"
 requires-python = ">=3.9"
 dependencies = [
-    "ibis-framework[duckdb]",
+    "ibis-framework[duckdb]<10",
     "antlr4-python3-runtime",
     "ibis-substrait",
     "pyarrow",

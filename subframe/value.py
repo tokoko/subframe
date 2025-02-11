@@ -1,7 +1,30 @@
 from substrait.gen.proto import algebra_pb2 as stalg
 from substrait.gen.proto import type_pb2 as stt
+from subframe.utils import FieldReferenceTransformer
 
 # from .table import Table
+
+
+def off(tables):
+    count = 0
+    offsets = {}
+    for t in tables:
+        new_count = count + len(t.names)
+        offsets[t] = (count, new_count)
+        count = new_count
+
+    return offsets
+
+
+def tran(offsets, new_offsets):
+    transforms = []
+
+    for t, offset in offsets.items():
+        incr = new_offsets[t][0] - offset[0]
+        if incr != 0:
+            transforms.append((offset, incr))
+
+    return transforms
 
 
 class Value:
@@ -9,11 +32,13 @@ class Value:
         self,
         expression: stalg.Expression,
         data_type: stt.Type,
+        tables: list,
         name: str = "",
         extensions={},
     ):
         self.expression = expression
         self._name = name
+        self.tables = tables
         self.extensions = extensions
         self.data_type = data_type
 
@@ -22,11 +47,43 @@ class Value:
             expression=self.expression,
             data_type=self.data_type,
             name=name,
+            tables=self.tables,
+            extensions=self.extensions,
+        )
+
+    def readjust(self, new_tables):
+        offsets = off(self.tables)
+        new_offsets = off(new_tables)
+        transforms = tran(offsets, new_offsets)
+
+        if transforms:
+            new_expression = stalg.Expression()
+            new_expression.CopyFrom(self.expression)
+            FieldReferenceTransformer(transforms).visit_expression(new_expression)
+        else:
+            new_expression = self.expression
+
+        return Value(
+            expression=new_expression,
+            data_type=self.data_type,
+            name=self._name,
+            tables=new_tables,
             extensions=self.extensions,
         )
 
     def _apply_function(self, other: "Value", url: str, func: str, col_name: str):
         from subframe import registry
+
+        new_tables = []
+
+        for t in self.tables:
+            new_tables.append(t)
+
+        for t in other.tables:
+            if t not in self.tables:
+                new_tables.append(t)
+
+        other = other.readjust(new_tables)
 
         (func_entry, rtn) = registry.lookup_function(
             url,
@@ -51,6 +108,7 @@ class Value:
                 )
             ),
             data_type=output_type,
+            tables=new_tables,
             name=f"{col_name}({self._name}, {other._name})",
             extensions={func_entry.uri: {str(func_entry): func_entry.anchor}},
         )
@@ -112,21 +170,6 @@ class Value:
             func="gte",
             col_name="GreaterEqual",
         )
-
-
-class Column(Value):
-    def __init__(
-        self,
-        expression: stalg.Expression,
-        data_type: stt.Type,
-        table,
-        name: str = "",
-        extensions={},
-    ):
-        super().__init__(
-            expression=expression, data_type=data_type, name=name, extensions=extensions
-        )
-        self.table = table
 
     def _apply_aggregate_function(self, url: str, func: str, col_name: str):
         from subframe import registry
@@ -229,6 +272,7 @@ class Column(Value):
             data_type=output_type,
             name=f"{col_name}({self._name}, {' ,'.join([a._name for a in additional_arguments])})",
             extensions={func_entry.uri: {str(func_entry): func_entry.anchor}},
+            tables=self.tables,
         )
 
     def lead(self, offset):  # TODO default

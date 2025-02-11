@@ -3,6 +3,7 @@ from substrait.gen.proto import type_pb2 as stt
 from substrait.gen.proto.type_pb2 import Type
 from substrait.gen.proto.algebra_pb2 import Rel, RelCommon
 import substrait.gen.proto.algebra_pb2 as stalg
+from subframe.visitor import SubstraitPlanVisitor
 
 
 def merge_extensions(extensions, exprs):
@@ -159,3 +160,20 @@ def infer_rel_schema(rel: Rel) -> stt.Type.Struct:
         raise Exception(f"Unhandled rel_type {rel_type}")
 
     return apply_emit(struct, common)
+
+
+class FieldReferenceTransformer(SubstraitPlanVisitor):
+    def __init__(self, transforms):
+        self.transforms = transforms
+
+    def visit_field_reference(self, ref):
+
+        field = ref.direct_reference.struct_field.field
+        new_field = field
+
+        for t in self.transforms:
+            if field >= t[0][0] and field < t[0][1]:
+                new_field = field + t[1]
+
+        ref.direct_reference.struct_field.field = new_field
+        super().visit_field_reference(ref)

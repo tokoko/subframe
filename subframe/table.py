@@ -3,7 +3,7 @@ from substrait.gen.proto import algebra_pb2 as stalg
 from substrait.gen.proto import plan_pb2 as stp
 from substrait.gen.proto import type_pb2 as stt
 from substrait.gen.proto.extensions import extensions_pb2 as ste
-from .value import Value, Column, AggregateValue
+from .value import Value, AggregateValue
 from .utils import merge_extensions
 
 
@@ -33,11 +33,11 @@ class Table:
                 ),
             )
         )
-        return Column(
+        return Value(
             expression,
             data_type=self.struct.types[list(self.names).index(what)],
             name=what,
-            table=self,
+            tables=[self],
         )
 
     def to_substrait(self) -> stp.Plan:
@@ -283,6 +283,7 @@ class Table:
             data_type=self.struct.types[0],
             name="ScalarSubquery()",  # TODO why??
             extensions=self.extensions,
+            tables=[],
         )
 
     # TODO add rest
@@ -301,6 +302,33 @@ class Table:
             names=list(self.names) + list(table.names),
             struct=self._merge_structs(table.struct),
             extensions=self._merged_extensions([table]),
+            relations=self.relations,
+        )
+
+    def join(
+        self, right: "Table", predicates: list[Value], how: str = "inner"
+    ) -> "Table":
+        join_mapping = {
+            "inner": stalg.JoinRel.JoinType.JOIN_TYPE_INNER,
+            "left": stalg.JoinRel.JoinType.JOIN_TYPE_LEFT,
+            "right": stalg.JoinRel.JoinType.JOIN_TYPE_RIGHT,
+            "outer": stalg.JoinRel.JoinType.JOIN_TYPE_OUTER,
+        }
+
+        rel = stalg.Rel(
+            join=stalg.JoinRel(
+                left=self.rel,
+                right=right.rel,
+                expression=predicates[0].expression,
+                type=join_mapping[how],
+            )
+        )
+
+        return Table(
+            rel=rel,
+            names=list(self.names) + list(right.names),
+            struct=self._merge_structs(right.struct),
+            extensions=self._merged_extensions([right, *predicates]),
             relations=self.relations,
         )
 
