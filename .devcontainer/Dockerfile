@@ -3,9 +3,9 @@ USER vscode
 RUN curl -fsSL https://pixi.sh/install.sh | bash
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 ENV PATH=$PATH:/home/vscode/.cargo/bin
-RUN uv venv ~/.local
-ENV VIRTUAL_ENV=~/.local
-ENV PATH=$VIRTUAL_ENV/bin:$PATH
+# RUN uv. venv ~/.local
+# ENV VIRTUAL_ENV=~/.local
+# ENV PATH=$VIRTUAL_ENV/bin:$PATH
 RUN curl -s "https://get.sdkman.io" | bash
 SHELL ["/bin/bash", "-c"]
 RUN source "/home/vscode/.sdkman/bin/sdkman-init.sh" && sdk install java 20.0.2-graalce

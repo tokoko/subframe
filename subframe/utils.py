@@ -3,7 +3,7 @@ from substrait.gen.proto import type_pb2 as stt
 from substrait.gen.proto.type_pb2 import Type
 from substrait.gen.proto.algebra_pb2 import Rel, RelCommon
 import substrait.gen.proto.algebra_pb2 as stalg
-from subframe.visitor import SubstraitPlanVisitor
+from google.protobuf.descriptor import FieldDescriptor
 
 
 def merge_extensions(extensions, exprs):
@@ -162,18 +162,31 @@ def infer_rel_schema(rel: Rel) -> stt.Type.Struct:
     return apply_emit(struct, common)
 
 
-class FieldReferenceTransformer(SubstraitPlanVisitor):
-    def __init__(self, transforms):
-        self.transforms = transforms
+def visit(proto_object, handler):
+    handler(proto_object)
+    fields_to_visit = [
+        field
+        for field in proto_object.DESCRIPTOR.fields
+        if field.type == FieldDescriptor.TYPE_MESSAGE
+    ]
+    for field in fields_to_visit:
+        if field.label == FieldDescriptor.LABEL_REPEATED:
+            for i in proto_object.__getattribute__(field.name):
+                visit(i, handler)
+        elif proto_object.HasField(field.name):
+            visit(proto_object.__getattribute__(field.name), handler)
 
-    def visit_field_reference(self, ref):
 
-        field = ref.direct_reference.struct_field.field
-        new_field = field
+def field_reference_transformer(transforms):
+    def handler(proto_object):
+        if type(proto_object) == stalg.Expression.FieldReference:
+            field = proto_object.direct_reference.struct_field.field
+            new_field = field
 
-        for t in self.transforms:
-            if field >= t[0][0] and field < t[0][1]:
-                new_field = field + t[1]
+            for t in transforms:
+                if field >= t[0][0] and field < t[0][1]:
+                    new_field = field + t[1]
 
-        ref.direct_reference.struct_field.field = new_field
-        super().visit_field_reference(ref)
+            proto_object.direct_reference.struct_field.field = new_field
+
+    return handler

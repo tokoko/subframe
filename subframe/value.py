@@ -1,6 +1,6 @@
 from substrait.gen.proto import algebra_pb2 as stalg
 from substrait.gen.proto import type_pb2 as stt
-from subframe.utils import FieldReferenceTransformer
+from subframe.utils import field_reference_transformer, visit
 
 # from .table import Table
 
@@ -59,7 +59,7 @@ class Value:
         if transforms:
             new_expression = stalg.Expression()
             new_expression.CopyFrom(self.expression)
-            FieldReferenceTransformer(transforms).visit_expression(new_expression)
+            visit(new_expression, field_reference_transformer(transforms))
         else:
             new_expression = self.expression
 
